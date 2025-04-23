@@ -1,7 +1,6 @@
 package lib.report;
 
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Contains the list of types (classes or interfaces) used by a single class or interface.
@@ -45,6 +44,7 @@ public class ClassDepsReport {
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Class Name: ").append(className).append("\n");
+        sb.append("Dependency Count: ").append(this.getDependencyCount()).append("\n");
         sb.append("Dependencies: ");
         for (String type : dependencies) {
             sb.append(type).append(", ");
