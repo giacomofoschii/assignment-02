@@ -21,10 +21,6 @@ public class PackageDepsReport {
         return packageName;
     }
 
-    public Map<String, ClassDepsReport> getClassReports() {
-        return Collections.unmodifiableMap(classReports);
-    }
-
     public void addClassReport(ClassDepsReport classReport) {
         classReports.put(classReport.getClassName(), classReport);
     }

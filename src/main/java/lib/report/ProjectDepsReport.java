@@ -15,14 +15,6 @@ public class ProjectDepsReport {
         this.packageReports = new HashMap<>();
     }
 
-    public String getProjectName() {
-        return projectName;
-    }
-
-    public Map<String, PackageDepsReport> getPackageReports() {
-        return Collections.unmodifiableMap(packageReports);
-    }
-
     public void addPackageReport(PackageDepsReport packageReport) {
         packageReports.put(packageReport.getPackageName(), packageReport);
     }

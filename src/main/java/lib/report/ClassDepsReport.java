@@ -1,7 +1,7 @@
 package lib.report;
 
-import lib.utils.DependencyType;
 import lib.utils.TypeDependency;
+import lib.utils.TypeDependency.DependencyType;
 
 import java.util.*;
 
@@ -23,21 +23,12 @@ public class ClassDepsReport {
         return className;
     }
 
-    public void addDependencies(Set<TypeDependency> dependencies) {
-        this.dependencies.addAll(dependencies);
-    }
-
     public void addDependency(TypeDependency dependency) {
         dependencies.add(dependency);
     }
 
     public int getDependencyCount() {
         return dependencies.size();
-    }
-
-    public boolean hasDependency(String dependency) {
-        return dependencies.stream()
-                .anyMatch(d -> d.targetType().equals(dependency));
     }
 
     public Set<TypeDependency> getDependencies() {

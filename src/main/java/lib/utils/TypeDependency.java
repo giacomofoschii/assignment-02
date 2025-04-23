@@ -12,6 +12,12 @@ import java.util.*;
  */
 public record TypeDependency(String sourceType, String targetType, DependencyType type, String location) {
 
+    public enum DependencyType {
+        EXTENDS,
+        IMPLEMENTS,
+        INSTANTIATION
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
