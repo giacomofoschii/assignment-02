@@ -35,17 +35,6 @@ public class ProjectDepsReport {
                 .sum();
     }
 
-    public Map<String, Set<String>> getPackageDependencyGraph() {
-        Map<String, Set<String>> graph = new HashMap<>();
-
-        for (PackageDepsReport report : packageReports.values()) {
-            String pkg = report.getPackageName();
-            Set<String> dependencies = report.getDependentPackages();
-            graph.put(pkg, dependencies);
-        }
-        return graph;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -53,15 +42,9 @@ public class ProjectDepsReport {
         sb.append("Package Count: ").append(this.getPackageCount()).append("\n");
         sb.append("Class Count: ").append(this.getClassCount()).append("\n");
         sb.append("Total Dependencies: ").append(this.getTotalDependencyCount()).append("\n");
-        sb.append("\nPackage dependency graph:\n");
-        Map<String, Set<String>> graph = getPackageDependencyGraph();
-        for (Map.Entry<String, Set<String>> entry : graph.entrySet()) {
-            sb.append("  ").append(entry.getKey()).append(" -> ");
-            sb.append(entry.getValue()).append("\n");
-        }
         sb.append("Package Reports: \n");
         for (PackageDepsReport packageReport : packageReports.values()) {
-            sb.append(packageReport.toString()).append("\n");
+            sb.append("\t").append(packageReport.toString().replace("\n", "\n\t")).append("\n");
         }
         return sb.toString();
     }

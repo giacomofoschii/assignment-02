@@ -5,17 +5,40 @@ import java.util.*;
 /**
  * Represents a single dependencies between classes
  *
- * @param sourceType dependent class
- * @param targetType origin class
- * @param type       type of dependency
- * @param location   location of the dependency in the source code
  */
-public record TypeDependency(String sourceType, String targetType, DependencyType type, String location) {
+public class TypeDependency {
+    private final String sourceType;
+    private final String targetType;
+    private final DependencyType type;
+    private final String location;
 
     public enum DependencyType {
         EXTENDS,
         IMPLEMENTS,
         INSTANTIATION
+    }
+
+    public TypeDependency(String sourceType, String targetType, DependencyType type, String location) {
+        this.sourceType = sourceType;
+        this.targetType = targetType;
+        this.type = type;
+        this.location = location;
+    }
+
+    public String sourceType() {
+        return sourceType;
+    }
+
+    public String targetType() {
+        return targetType;
+    }
+
+    public DependencyType type() {
+        return type;
+    }
+
+    public String location() {
+        return location;
     }
 
     @Override

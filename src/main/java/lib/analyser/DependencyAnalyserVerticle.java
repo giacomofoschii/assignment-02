@@ -22,9 +22,9 @@ public class DependencyAnalyserVerticle extends AbstractVerticle {
 
         CompositeFuture.all(classReport, packageReport, projectReport)
                 .onSuccess(res -> {
-                    classReport.result().toString();
-                    packageReport.result().toString();
-                    projectReport.result().toString();
+                    System.out.println(classReport.result().toString());
+                    System.out.println(packageReport.result().toString());
+                    System.out.println(projectReport.result().toString());
                     startPromise.complete();
                 })
                 .onFailure(System.err::println);

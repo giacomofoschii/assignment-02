@@ -35,32 +35,15 @@ public class PackageDepsReport {
                 .sum();
     }
 
-    public Set<String> getDependentPackages() {
-        Set<String> packages = new HashSet<>();
-
-        for (ClassDepsReport report : classReports.values()) {
-            for (TypeDependency dep : report.getDependencies()) {
-                String targetType = dep.targetType();
-                int lastDot = targetType.lastIndexOf('.');
-                if (lastDot > 0) {
-                    packages.add(targetType.substring(0, lastDot));
-                }
-            }
-        }
-
-        return packages;
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Package Name: ").append(packageName).append("\n");
         sb.append("Class Count: ").append(this.getClassCount()).append("\n");
         sb.append("Total Dependencies: ").append(this.getTotalDependencyCount()).append("\n");
-        sb.append("Dependent packages").append(getDependentPackages()).append("\n");
         sb.append("Class Reports: \n");
         for (ClassDepsReport classReport : classReports.values()) {
-            sb.append(classReport.toString()).append("\n");
+            sb.append("\t").append(classReport.toString().replace("\n", "\n\t")).append("\n");
         }
         return sb.toString();
     }
