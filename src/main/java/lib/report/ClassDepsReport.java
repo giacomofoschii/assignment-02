@@ -1,5 +1,8 @@
 package lib.report;
 
+import lib.utils.DependencyType;
+import lib.utils.TypeDependency;
+
 import java.util.*;
 
 /**
@@ -9,9 +12,9 @@ import java.util.*;
 public class ClassDepsReport {
 
     private final String className;
-    private final Set<String> dependencies;
+    private final Set<TypeDependency> dependencies;
 
-    public ClassDepsReport(String className, Set<String> dependencies) {
+    public ClassDepsReport(String className, Set<TypeDependency> dependencies) {
         this.className = className;
         this.dependencies = dependencies;
     }
@@ -20,11 +23,11 @@ public class ClassDepsReport {
         return className;
     }
 
-    public void addDependencies(Set<String> dependencies) {
+    public void addDependencies(Set<TypeDependency> dependencies) {
         this.dependencies.addAll(dependencies);
     }
 
-    public void addDependency(String dependency) {
+    public void addDependency(TypeDependency dependency) {
         dependencies.add(dependency);
     }
 
@@ -33,10 +36,11 @@ public class ClassDepsReport {
     }
 
     public boolean hasDependency(String dependency) {
-        return dependencies.contains(dependency);
+        return dependencies.stream()
+                .anyMatch(d -> d.targetType().equals(dependency));
     }
 
-    public Set<String> getDependencies() {
+    public Set<TypeDependency> getDependencies() {
         return Collections.unmodifiableSet(dependencies);
     }
 
@@ -45,9 +49,20 @@ public class ClassDepsReport {
         StringBuilder sb = new StringBuilder();
         sb.append("Class Name: ").append(className).append("\n");
         sb.append("Dependency Count: ").append(this.getDependencyCount()).append("\n");
-        sb.append("Dependencies: ");
-        for (String type : dependencies) {
-            sb.append(type).append(", ");
+
+        // Group by type
+        Map<DependencyType, List<TypeDependency>> grouped = new HashMap<>();
+        for (TypeDependency dep : dependencies) {
+            grouped.computeIfAbsent(dep.type(), k -> new ArrayList<>()).add(dep);
+        }
+
+        // Print each group
+        for (Map.Entry<DependencyType, List<TypeDependency>> entry : grouped.entrySet()) {
+            sb.append("  ").append(entry.getKey()).append(":\n");
+            for (TypeDependency dep : entry.getValue()) {
+                sb.append("    ").append(dep.targetType())
+                        .append(" (at ").append(dep.location()).append(")\n");
+            }
         }
         return sb.toString();
     }

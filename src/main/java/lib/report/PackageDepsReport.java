@@ -1,5 +1,7 @@
 package lib.report;
 
+import lib.utils.TypeDependency;
+
 import java.util.*;
 
 /**
@@ -37,12 +39,28 @@ public class PackageDepsReport {
                 .sum();
     }
 
-    public Set<String> getAllDependencies() {
-        Set<String> allDependencies = new HashSet<>();
+    public Set<TypeDependency> getAllDependencies() {
+        Set<TypeDependency> allDependencies = new HashSet<>();
         for (ClassDepsReport classReport : classReports.values()) {
             allDependencies.addAll(classReport.getDependencies());
         }
         return allDependencies;
+    }
+
+    public Set<String> getDependentPackages() {
+        Set<String> packages = new HashSet<>();
+
+        for (ClassDepsReport report : classReports.values()) {
+            for (TypeDependency dep : report.getDependencies()) {
+                String targetType = dep.targetType();
+                int lastDot = targetType.lastIndexOf('.');
+                if (lastDot > 0) {
+                    packages.add(targetType.substring(0, lastDot));
+                }
+            }
+        }
+
+        return packages;
     }
 
     @Override
@@ -51,6 +69,7 @@ public class PackageDepsReport {
         sb.append("Package Name: ").append(packageName).append("\n");
         sb.append("Class Count: ").append(this.getClassCount()).append("\n");
         sb.append("Total Dependencies: ").append(this.getTotalDependencyCount()).append("\n");
+        sb.append("Dependent packages").append(getDependentPackages()).append("\n");
         sb.append("Class Reports: \n");
         for (ClassDepsReport classReport : classReports.values()) {
             sb.append(classReport.toString()).append("\n");
