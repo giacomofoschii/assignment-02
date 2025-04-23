@@ -3,12 +3,12 @@ package lib.utils;
 import java.util.*;
 
 /**
- * Rappresenta una singola dipendenza tra classi
+ * Represents a single dependencies between classes
  *
- * @param sourceType Classe che dipende
- * @param targetType Classe da cui dipende
- * @param type       Tipo di dipendenza
- * @param location   Dove si verifica (es. nome metodo, attributo)
+ * @param sourceType dependent class
+ * @param targetType origin class
+ * @param type       type of dependency
+ * @param location   location of the dependency in the source code
  */
 public record TypeDependency(String sourceType, String targetType, DependencyType type, String location) {
 

@@ -39,14 +39,6 @@ public class PackageDepsReport {
                 .sum();
     }
 
-    public Set<TypeDependency> getAllDependencies() {
-        Set<TypeDependency> allDependencies = new HashSet<>();
-        for (ClassDepsReport classReport : classReports.values()) {
-            allDependencies.addAll(classReport.getDependencies());
-        }
-        return allDependencies;
-    }
-
     public Set<String> getDependentPackages() {
         Set<String> packages = new HashSet<>();
 
