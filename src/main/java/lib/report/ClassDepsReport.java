@@ -14,9 +14,9 @@ public class ClassDepsReport {
     private final String className;
     private final Set<TypeDependency> dependencies;
 
-    public ClassDepsReport(String className, Set<TypeDependency> dependencies) {
+    public ClassDepsReport(String className) {
         this.className = className;
-        this.dependencies = dependencies;
+        this.dependencies = new HashSet<>();
     }
 
     public String getClassName() {
