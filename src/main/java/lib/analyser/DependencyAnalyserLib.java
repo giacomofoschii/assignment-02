@@ -5,5 +5,5 @@ package lib.analyser;
  * packages and Java projects.
  * It uses specific analysers to perform the analysis asynchronously.
  */
-public class DependencyAnalyser {
+public class DependencyAnalyserLib {
 }
