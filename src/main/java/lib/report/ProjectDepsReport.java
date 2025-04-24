@@ -47,7 +47,7 @@ public class ProjectDepsReport {
         for (PackageDepsReport packageReport : packageReports.values()) {
             sb.append("\t").append(packageReport.toString().replace("\n", "\n\t")).append("\n");
         }
-        sb.append("-----------------------END-PROJECT------------------------\n");
+        sb.append("---------------------END-PROJECT----------------------\n");
         return sb.toString();
     }
 }

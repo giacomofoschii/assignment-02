@@ -56,7 +56,7 @@ public class ClassDepsReport {
                         .append(" (at ").append(dep.location()).append(")\n");
             }
         }
-        sb.append("-----------------------END-CLASS------------------------\n");
+        sb.append("---------------------END-CLASS----------------------\n");
         return sb.toString();
     }
 }
