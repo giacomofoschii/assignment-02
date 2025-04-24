@@ -4,13 +4,11 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
+
 import lib.report.ClassDepsReport;
 import lib.utils.TypeDependency;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 import static lib.utils.TypeDependency.DependencyType;
 
@@ -86,8 +84,8 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
 
     private String resolveTypeName(ClassOrInterfaceType type) {
         try {
-            ResolvedReferenceTypeDeclaration resolved = (ResolvedReferenceTypeDeclaration) type.resolve();
-            return resolved.getQualifiedName();
+            var resolved = type.resolve();
+            return resolved.isReferenceType() ? resolved.asReferenceType().getQualifiedName() : type.getNameAsString();
         } catch (Exception e) {
             // Fallback al nome semplice se la risoluzione fallisce
             return type.getNameAsString();
