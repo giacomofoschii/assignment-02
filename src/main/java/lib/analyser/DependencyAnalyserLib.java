@@ -27,62 +27,36 @@ public class DependencyAnalyserLib {
         this.parser = createJavaParser(new CombinedTypeSolver(new ReflectionTypeSolver(false)));
     }
 
-    //Creates a JavaParser instance with a custom type solver.
-    //Needed for type dependency to define source and target.
-    private JavaParser createJavaParser(CombinedTypeSolver typeSolver) {
-        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
-        JavaParser parser = new JavaParser();
-        parser.getParserConfiguration().setSymbolResolver(symbolSolver);
-        return parser;
-    }
-
-    private void configureSourceRepositories(List<File> rootDirs) {
-        //Needed to import personal types, created by us in the project
-        //For correct tracking of these methods, we need a javaparserTypeSolver, with our directories
-        CombinedTypeSolver typeSolver = new CombinedTypeSolver();
-        typeSolver.add(new ReflectionTypeSolver(false));
-        for (File rootDir : rootDirs) {
-            if (rootDir.exists() && rootDir.isDirectory()) {
-                typeSolver.add(new JavaParserTypeSolver(rootDir));}}
-        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
-        this.parser.getParserConfiguration().setSymbolResolver(symbolSolver);
-    }
-
     public Future<ClassDepsReport> getClassDependencies(Path classSrcFile) {
-        return this.readFileAsync(classSrcFile)
-                .compose(sourceCode -> this.parseSourceCode(classSrcFile, sourceCode))
-                .map(this::createClassDepsReport);
-    }
+        Promise<ClassDepsReport> promise = Promise.promise();
 
-    private Future<String> readFileAsync(Path filePath) {
-        Promise<String> promise = Promise.promise();
-        vertx.fileSystem().readFile(filePath.toString(), read -> {
+        this.vertx.fileSystem().readFile(classSrcFile.toString(), read -> {
             if (read.succeeded()) {
-                promise.complete(read.result().toString("UTF-8"));
+                String sourceCode = read.result().toString("UTF-8");
+                ParseResult<CompilationUnit> parseResult = this.parser.parse(sourceCode);
+
+                if (parseResult == null || !parseResult.isSuccessful() || !parseResult.getResult().isPresent()) {
+                    promise.fail("Failed to parse " + classSrcFile.getFileName() + ": " +
+                            (parseResult != null ? parseResult.getProblems() : "ParseResult is null"));
+                    return;
+                }
+
+                CompilationUnit cu = parseResult.getResult().get();
+                String className = cu.getPackageDeclaration()
+                        .map(pd -> pd.getName().asString() + ".")
+                        .orElse("") + getMainClassName(cu);
+                ClassDepsReport classReport = new ClassDepsReport(className);
+
+                // Visit the AST to find dependencies
+                cu.accept(new DependencyVisitor(classReport, className), null);
+
+                promise.complete(classReport);
             } else {
-                promise.fail("Error reading file " + filePath.getFileName() + ": " + read.cause().getMessage());
+                promise.fail("Error reading file " + classSrcFile.getFileName() + ": " + read.cause().getMessage());
             }
         });
+
         return promise.future();
-    }
-
-    private Future<CompilationUnit> parseSourceCode(Path filePath, String sourceCode) {
-        ParseResult<CompilationUnit> parseResult = parser.parse(sourceCode);
-        if (parseResult.isSuccessful() && parseResult.getResult().isPresent()) {
-            return Future.succeededFuture(parseResult.getResult().get());
-        } else {
-            return Future.failedFuture("Failed to parse " + filePath.getFileName() + ": " +
-                    (parseResult.getProblems().isEmpty() ? "Unknown error" : parseResult.getProblems()));
-        }
-    }
-
-    private ClassDepsReport createClassDepsReport(CompilationUnit cu) {
-        String className = cu.getPackageDeclaration()
-                .map(pd -> pd.getName().asString() + ".")
-                .orElse("") + getMainClassName(cu);
-        ClassDepsReport classReport = new ClassDepsReport(className);
-        cu.accept(new DependencyVisitor(classReport, className), null);
-        return classReport;
     }
 
     public Future<PackageDepsReport> getPackageDependencies(Path packageSrcFolder) {
@@ -167,6 +141,27 @@ public class DependencyAnalyserLib {
         }
 
         return packageDir.getName();
+    }
+
+    //Creates a JavaParser instance with a custom type solver.
+    //Needed for type dependency to define source and target.
+    private JavaParser createJavaParser(CombinedTypeSolver typeSolver) {
+        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
+        JavaParser parser = new JavaParser();
+        parser.getParserConfiguration().setSymbolResolver(symbolSolver);
+        return parser;
+    }
+
+    private void configureSourceRepositories(List<File> rootDirs) {
+        //Needed to import personal types, created by us in the project
+        //For correct tracking of these methods, we need a javaparserTypeSolver, with our directories
+        CombinedTypeSolver typeSolver = new CombinedTypeSolver();
+        typeSolver.add(new ReflectionTypeSolver(false));
+        for (File rootDir : rootDirs) {
+            if (rootDir.exists() && rootDir.isDirectory()) {
+                typeSolver.add(new JavaParserTypeSolver(rootDir));}}
+        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
+        this.parser.getParserConfiguration().setSymbolResolver(symbolSolver);
     }
 
     private List<Path> findPackageDirectories(Path projectDir) {
