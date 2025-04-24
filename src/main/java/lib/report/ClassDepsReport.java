@@ -50,9 +50,9 @@ public class ClassDepsReport {
 
         // Print each group
         for (Map.Entry<DependencyType, List<TypeDependency>> entry : grouped.entrySet()) {
-            sb.append("  ").append(entry.getKey()).append(":\n");
+            sb.append("\t").append(entry.getKey()).append(":\n");
             for (TypeDependency dep : entry.getValue()) {
-                sb.append("    ").append(dep.getTargetType())
+                sb.append("\t").append(dep.getTargetType())
                         .append(" (at ").append(dep.getLocation()).append(")\n");
             }
         }

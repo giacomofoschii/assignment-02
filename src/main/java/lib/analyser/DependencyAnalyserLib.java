@@ -24,6 +24,7 @@ public class DependencyAnalyserLib {
 
     public DependencyAnalyserLib(Vertx vertx) {
         this.vertx = vertx;
+        //Needed for type dependency to define source and target
         CombinedTypeSolver typeSolver = new CombinedTypeSolver();
         typeSolver.add(new ReflectionTypeSolver(false)); // Excluded primitive types
         JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
@@ -31,7 +32,9 @@ public class DependencyAnalyserLib {
         this.parser.getParserConfiguration().setSymbolResolver(symbolSolver);
     }
 
-    public void configureSourceRepositories(List<File> rootDirs) {
+    private void configureSourceRepositories(List<File> rootDirs) {
+        //Needed to import personal types, created by us in the project
+        //For correct tracking of this methods, we need a javaparserTypeSolver, with our directories
         CombinedTypeSolver typeSolver = new CombinedTypeSolver();
         typeSolver.add(new ReflectionTypeSolver(false));
         for (File rootDir : rootDirs) {
@@ -41,81 +44,33 @@ public class DependencyAnalyserLib {
         this.parser.getParserConfiguration().setSymbolResolver(symbolSolver);
     }
 
-    private Future<String> readFile(Path path) {
-        final Promise<String> filePromise = Promise.promise();
-
-        this.vertx.fileSystem().readFile(path.toString(), read -> {
-            if (read.succeeded())
-                filePromise.complete(read.result().toString("UTF-8"));
-            else
-                filePromise.fail(read.cause());
-        });
-
-        return filePromise.future();
-    }
-
-    private ParseResult<CompilationUnit> parseSourceCode(String sourceCode) {
-        return this.parser.parse(sourceCode);
-    }
-
-
     public Future<ClassDepsReport> getClassDependencies(Path classSrcFile) {
         Promise<ClassDepsReport> promise = Promise.promise();
 
-//        this.vertx.executeBlocking(blockingPromise -> {
-//            try {
-//                ParseResult<CompilationUnit> parseResult = this.parser.parse(classSrcFile);
-//
-//                if (!parseResult.isSuccessful()) {
-//                    blockingPromise.fail("Failed to parse " + classSrcFile.getFileName() + ": "
-//                            + parseResult.getProblems());
-//                    return;
-//                }
-//
-//                CompilationUnit cu = parseResult.getResult().isPresent() ? parseResult.getResult().get() : null;
-//
-//                // Extract the class name from the CompilationUnit
-//                if (cu != null) {
-//                    String className = cu.getPackageDeclaration()
-//                            .map(pd -> pd.getName().asString() + ".")
-//                            .orElse("") + getMainClassName(cu);
-//                    ClassDepsReport classReport = new ClassDepsReport(className);
-//
-//                    // Visit the AST to find dependencies
-//                    cu.accept(new DependencyVisitor(classReport, className), null);
-//
-//                    blockingPromise.complete(classReport);
-//                } else {
-//                    blockingPromise.fail("Compilation unit is null for " + classSrcFile.getFileName());
-//                }
-//            } catch (FileNotFoundException e) {
-//                blockingPromise.fail("File not found: " + classSrcFile);
-//            } catch (Exception e) {
-//                blockingPromise.fail("Error analyzing " + classSrcFile.getFileName() + ": " + e.getMessage());
-//            }
-//        }, promise);
+        this.vertx.fileSystem().readFile(classSrcFile.toString(), read -> {
+            if (read.succeeded()) {
+                String sourceCode = read.result().toString("UTF-8");
+                ParseResult<CompilationUnit> parseResult = this.parser.parse(sourceCode);
 
-        this.readFile(classSrcFile).onSuccess(sourceCode -> {
-            ParseResult<CompilationUnit> parseResult = this.parseSourceCode(sourceCode);
+                if (parseResult == null || !parseResult.isSuccessful() || !parseResult.getResult().isPresent()) {
+                    promise.fail("Failed to parse " + classSrcFile.getFileName() + ": " +
+                            (parseResult != null ? parseResult.getProblems() : "ParseResult is null"));
+                    return;
+                }
 
-            if (parseResult == null || !parseResult.isSuccessful() || !parseResult.getResult().isPresent()) {
-                promise.fail("Failed to parse " + classSrcFile.getFileName() + ": " +
-                        (parseResult != null ? parseResult.getProblems() : "ParseResult is null"));
-                return;
+                CompilationUnit cu = parseResult.getResult().get();
+                String className = cu.getPackageDeclaration()
+                        .map(pd -> pd.getName().asString() + ".")
+                        .orElse("") + getMainClassName(cu);
+                ClassDepsReport classReport = new ClassDepsReport(className);
+
+                // Visit the AST to find dependencies
+                cu.accept(new DependencyVisitor(classReport, className), null);
+
+                promise.complete(classReport);
+            } else {
+                promise.fail("Error reading file " + classSrcFile.getFileName() + ": " + read.cause().getMessage());
             }
-
-            CompilationUnit cu = parseResult.getResult().get();
-            String className = cu.getPackageDeclaration()
-                    .map(pd -> pd.getName().asString() + ".")
-                    .orElse("") + getMainClassName(cu);
-            ClassDepsReport classReport = new ClassDepsReport(className);
-
-            // Visit the AST to find dependencies
-            cu.accept(new DependencyVisitor(classReport, className), null);
-
-            promise.complete(classReport);
-        }).onFailure(cause -> {
-            promise.fail("Error reading file " + classSrcFile.getFileName() + ": " + cause.getMessage());
         });
 
         return promise.future();
