@@ -188,7 +188,7 @@ public class DependencyAnalyserLib {
 
     private String inferPackageName(File packageDir) {
         try {
-            // Cerca un file Java e leggi la dichiarazione del package
+            // Search for a Java file in the package directory
             File[] javaFiles = packageDir.listFiles((dir, name) -> name.endsWith(".java"));
             if (javaFiles != null && javaFiles.length > 0) {
                 ParseResult<CompilationUnit> parseResult = this.parser.parse(javaFiles[0]);
@@ -200,10 +200,8 @@ public class DependencyAnalyserLib {
                 }
             }
         } catch (Exception ignored) {
-            // Fallback al nome della directory
         }
 
-        // Fallback: usa il nome della directory
         return packageDir.getName();
     }
 

@@ -25,19 +25,19 @@ public class TypeDependency {
         this.location = location;
     }
 
-    public String sourceType() {
+    public String getSourceType() {
         return sourceType;
     }
 
-    public String targetType() {
+    public String getTargetType() {
         return targetType;
     }
 
-    public DependencyType type() {
+    public DependencyType getType() {
         return type;
     }
 
-    public String location() {
+    public String getLocation() {
         return location;
     }
 

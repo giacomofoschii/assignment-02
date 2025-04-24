@@ -45,15 +45,15 @@ public class ClassDepsReport {
         // Group by type
         Map<DependencyType, List<TypeDependency>> grouped = new HashMap<>();
         for (TypeDependency dep : dependencies) {
-            grouped.computeIfAbsent(dep.type(), k -> new ArrayList<>()).add(dep);
+            grouped.computeIfAbsent(dep.getType(), k -> new ArrayList<>()).add(dep);
         }
 
         // Print each group
         for (Map.Entry<DependencyType, List<TypeDependency>> entry : grouped.entrySet()) {
             sb.append("  ").append(entry.getKey()).append(":\n");
             for (TypeDependency dep : entry.getValue()) {
-                sb.append("    ").append(dep.targetType())
-                        .append(" (at ").append(dep.location()).append(")\n");
+                sb.append("    ").append(dep.getTargetType())
+                        .append(" (at ").append(dep.getLocation()).append(")\n");
             }
         }
         sb.append("---------------------END-CLASS----------------------\n");
