@@ -38,6 +38,7 @@ public class ProjectDepsReport {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append("-----------------------PROJECT------------------------\n");
         sb.append("Project Name: ").append(projectName).append("\n");
         sb.append("Package Count: ").append(this.getPackageCount()).append("\n");
         sb.append("Class Count: ").append(this.getClassCount()).append("\n");
@@ -46,6 +47,7 @@ public class ProjectDepsReport {
         for (PackageDepsReport packageReport : packageReports.values()) {
             sb.append("\t").append(packageReport.toString().replace("\n", "\n\t")).append("\n");
         }
+        sb.append("-----------------------END-PROJECT------------------------\n");
         return sb.toString();
     }
 }

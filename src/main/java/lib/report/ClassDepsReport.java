@@ -38,6 +38,7 @@ public class ClassDepsReport {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+        sb.append("-----------------------CLASS------------------------\n");
         sb.append("Class Name: ").append(className).append("\n");
         sb.append("Dependency Count: ").append(this.getDependencyCount()).append("\n");
 
@@ -55,6 +56,7 @@ public class ClassDepsReport {
                         .append(" (at ").append(dep.location()).append(")\n");
             }
         }
+        sb.append("-----------------------END-CLASS------------------------\n");
         return sb.toString();
     }
 }
