@@ -4,7 +4,6 @@ import java.util.*;
 
 /**
  * Represents a single dependencies between classes
- *
  */
 public class TypeDependency {
     private final String sourceType;

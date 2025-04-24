@@ -15,7 +15,7 @@ import java.util.Set;
 import static lib.utils.TypeDependency.DependencyType;
 
 /**
- * Visitor per l'analisi delle dipendenze in un file .java
+ * Visitor for the analysis of dependencies in Java classes.
  */
 public class DependencyVisitor extends VoidVisitorAdapter<Void> {
     private final ClassDepsReport report;

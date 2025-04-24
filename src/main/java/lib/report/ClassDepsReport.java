@@ -31,10 +31,6 @@ public class ClassDepsReport {
         return dependencies.size();
     }
 
-    public Set<TypeDependency> getDependencies() {
-        return Collections.unmodifiableSet(dependencies);
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
