@@ -3,7 +3,6 @@ package lib.analyser;
 import com.github.javaparser.*;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.resolution.TypeSolver;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.*;
 import io.vertx.core.*;
@@ -39,7 +38,7 @@ public class DependencyAnalyserLib {
 
     private void configureSourceRepositories(List<File> rootDirs) {
         //Needed to import personal types, created by us in the project
-        //For correct tracking of this methods, we need a javaparserTypeSolver, with our directories
+        //For correct tracking of these methods, we need a javaparserTypeSolver, with our directories
         CombinedTypeSolver typeSolver = new CombinedTypeSolver();
         typeSolver.add(new ReflectionTypeSolver(false));
         for (File rootDir : rootDirs) {
@@ -52,7 +51,7 @@ public class DependencyAnalyserLib {
     public Future<ClassDepsReport> getClassDependencies(Path classSrcFile) {
         return this.readFileAsync(classSrcFile)
                 .compose(sourceCode -> this.parseSourceCode(classSrcFile, sourceCode))
-                .map(cu -> this.createClassDepsReport(cu, classSrcFile));
+                .map(this::createClassDepsReport);
     }
 
     private Future<String> readFileAsync(Path filePath) {
@@ -77,7 +76,7 @@ public class DependencyAnalyserLib {
         }
     }
 
-    private ClassDepsReport createClassDepsReport(CompilationUnit cu, Path filePath) {
+    private ClassDepsReport createClassDepsReport(CompilationUnit cu) {
         String className = cu.getPackageDeclaration()
                 .map(pd -> pd.getName().asString() + ".")
                 .orElse("") + getMainClassName(cu);
@@ -186,10 +185,10 @@ public class DependencyAnalyserLib {
         }
 
         // Explore the subdirectories
-        File[] subdirs = dir.listFiles(File::isDirectory);
-        if (subdirs != null) {
-            for (File subdir : subdirs) {
-                this.findPackageDirsRecursive(subdir, packageDirs);
+        File[] subDirs = dir.listFiles(File::isDirectory);
+        if (subDirs != null) {
+            for (File subDir : subDirs) {
+                this.findPackageDirsRecursive(subDir, packageDirs);
             }
         }
     }
