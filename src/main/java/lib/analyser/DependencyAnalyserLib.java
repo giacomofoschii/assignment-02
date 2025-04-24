@@ -35,7 +35,7 @@ public class DependencyAnalyserLib {
                 String sourceCode = read.result().toString("UTF-8");
                 ParseResult<CompilationUnit> parseResult = this.parser.parse(sourceCode);
 
-                if (parseResult == null || !parseResult.isSuccessful() || !parseResult.getResult().isPresent()) {
+                if (parseResult == null || !parseResult.isSuccessful() || parseResult.getResult().isEmpty()) {
                     promise.fail("Failed to parse " + classSrcFile.getFileName() + ": " +
                             (parseResult != null ? parseResult.getProblems() : "ParseResult is null"));
                     return;
