@@ -14,7 +14,10 @@ public class TypeDependency {
     public enum DependencyType {
         EXTENDS,
         IMPLEMENTS,
-        INSTANTIATION
+        INSTANTIATION,
+        FIELD_TYPE,
+        METHOD_PARAMETER,
+        METHOD_RETURN
     }
 
     public TypeDependency(String sourceType, String targetType, DependencyType type, String location) {

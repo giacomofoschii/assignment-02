@@ -4,7 +4,9 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-
+import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
+import com.github.javaparser.resolution.types.ResolvedReferenceType;
+import com.github.javaparser.resolution.types.ResolvedType;
 import lib.report.ClassDepsReport;
 import lib.utils.TypeDependency;
 
@@ -35,7 +37,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         for (ClassOrInterfaceType extendedType : n.getExtendedTypes()) {
             try {
                 String typeName = resolveTypeName(extendedType);
-                if (!shouldExcludeType(typeName)) {
+                if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, DependencyType.EXTENDS,
                             "class " + n.getNameAsString()
@@ -48,7 +50,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         for (ClassOrInterfaceType implementedType : n.getImplementedTypes()) {
             try {
                 String typeName = resolveTypeName(implementedType);
-                if (!shouldExcludeType(typeName)) {
+                if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, DependencyType.IMPLEMENTS,
                             "class " + n.getNameAsString()
@@ -62,11 +64,66 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
     }
 
     @Override
+    public void visit(FieldDeclaration n, Void arg) {
+        // Controlla i tipi dei campi
+        for (VariableDeclarator variable : n.getVariables()) {
+            Type type = variable.getType();
+            try {
+                String typeName = resolveTypeName(type);
+                if (!shouldExcludeType(typeName)) {
+                    report.addDependency(new TypeDependency(
+                            sourceClassName, typeName, DependencyType.FIELD_TYPE,
+                            "field " + variable.getNameAsString()
+                    ));
+                }
+            } catch (Exception ignored) {
+                // Ignora se non è possibile risolvere il tipo
+            }
+        }
+
+        super.visit(n, arg);
+    }
+
+    @Override
+    public void visit(MethodDeclaration n, Void arg) {
+        // Controlla il tipo di ritorno
+        Type returnType = n.getType();
+        try {
+            String typeName = resolveTypeName(returnType);
+            if (!shouldExcludeType(typeName)) {
+                report.addDependency(new TypeDependency(
+                        sourceClassName, typeName, DependencyType.METHOD_RETURN,
+                        "method " + n.getNameAsString() + " return"
+                ));
+            }
+        } catch (Exception ignored) {
+            // Ignora se non è possibile risolvere il tipo
+        }
+
+        // Controlla i parametri
+        for (Parameter parameter : n.getParameters()) {
+            try {
+                String typeName = resolveTypeName(parameter.getType());
+                if (!shouldExcludeType(typeName)) {
+                    report.addDependency(new TypeDependency(
+                            sourceClassName, typeName, DependencyType.METHOD_PARAMETER,
+                            "method " + n.getNameAsString() + " param " + parameter.getNameAsString()
+                    ));
+                }
+            } catch (Exception ignored) {
+                // Ignora se non è possibile risolvere il tipo
+            }
+        }
+
+        super.visit(n, arg);
+    }
+
+    @Override
     public void visit(ObjectCreationExpr n, Void arg) {
-        // Analizza le istanziazioni (new)
+        // Analyze object creation expressions
         try {
             String typeName = resolveTypeName(n.getType());
-            if (!shouldExcludeType(typeName)) {
+            if (shouldExcludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, DependencyType.INSTANTIATION,
                         n.getParentNode().map(Object::toString).orElse("unknown")
@@ -82,31 +139,47 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         this.excludedPackages.add(packageName);
     }
 
-    private String resolveTypeName(ClassOrInterfaceType type) {
+    private String resolveTypeName(Type type) {
         try {
-            var resolved = type.resolve();
-            return resolved.isReferenceType() ? resolved.asReferenceType().getQualifiedName() : type.getNameAsString();
+            if (type.isClassOrInterfaceType()) {
+                ResolvedType resolvedType = type.resolve();
+                if (resolvedType.isReferenceType()) {
+                    ResolvedReferenceType referenceType = resolvedType.asReferenceType();
+                    return referenceType.getQualifiedName();
+                }
+            }
         } catch (Exception e) {
             // Fallback al nome semplice se la risoluzione fallisce
+        }
+
+        return type.asString();
+    }
+
+    private String resolveTypeName(ClassOrInterfaceType type) {
+        try {
+            ResolvedReferenceTypeDeclaration resolved = (ResolvedReferenceTypeDeclaration) type.resolve();
+            return resolved.getQualifiedName();
+        } catch (Exception e) {
             return type.getNameAsString();
         }
     }
 
-    private boolean shouldExcludeType(String typeName) {// Escludi tipi primitivi e void
+    // Exclude void and primitive types
+    private boolean shouldExcludeType(String typeName) {
         if (typeName == null
                 || typeName.isEmpty()
                 || typeName.equals("void")
                 || isPrimitiveType(typeName)) {
-            return true;
+            return false;
         }
-        // Escludi tipi dei pacchetti base (java.lang, etc.)
+        // Exclude base package types (java.lang, etc.)
         for (String excludedPackage : this.excludedPackages) {
             if (typeName.startsWith(excludedPackage + ".")) {
-                return true;
+                return false;
             }
         }
-        // Escludi riferimenti alla stessa classe
-        return typeName.equals(sourceClassName);}
+        // Exclude types from the same class
+        return !typeName.equals(sourceClassName);}
 
     private boolean isPrimitiveType(String typeName) {
         return Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName);}}
