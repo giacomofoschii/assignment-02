@@ -8,10 +8,11 @@ import java.util.*;
 public class TypeDependency {
 
     public enum DependencyType {
+        IMPORT,
         EXTENDS,
         IMPLEMENTS,
         INSTANTIATION,
-        FIELD_TYPE,
+        FIELD,
         METHOD_PARAMETER,
         METHOD_RETURN
     }

@@ -1,5 +1,6 @@
 package lib.analyser;
 
+import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.*;
@@ -66,16 +67,18 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
     public void visit(FieldDeclaration n, Void arg) {
         // Check field declarations
         for (VariableDeclarator variable : n.getVariables()) {
-            Type type = variable.getType();
-            try {
-                String typeName = resolveTypeName(type);
-                if (shouldExcludeType(typeName)) {
-                    report.addDependency(new TypeDependency(
-                            sourceClassName, typeName, FIELD_TYPE,
-                            "field " + variable.getNameAsString()
-                    ));
+            if (variable.getType().isClassOrInterfaceType()) {
+                ClassOrInterfaceType type = variable.getType().asClassOrInterfaceType();
+                try {
+                    String typeName = resolveTypeName(type);
+                    if (shouldExcludeType(typeName)) {
+                        report.addDependency(new TypeDependency(
+                                sourceClassName, typeName, FIELD,
+                                "field " + variable.getNameAsString()
+                        ));
+                    }
+                } catch (Exception ignored) {
                 }
-            } catch (Exception ignored) {
             }
         }
 
@@ -130,6 +133,24 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
 
         super.visit(n, arg);
     }
+
+    /*
+    @Override
+    public void visit(ImportDeclaration n, Void arg) {
+        // Check for import dependencies
+        String importedName = n.getNameAsString();
+
+        // Skip static imports and entire packages
+        if (!n.isStatic() && !importedName.endsWith("*")) {
+            if (shouldExcludeType(importedName)) {
+                report.addDependency(new TypeDependency(
+                        sourceClassName, importedName, IMPORT,
+                        "import statement"
+                ));
+            }
+        }
+        super.visit(n, arg);
+    }*/
 
     public void addPackageToExclude(String packageName) {
         this.excludedPackages.add(packageName);
