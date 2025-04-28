@@ -6,6 +6,16 @@ import java.util.*;
  * Represents a single dependencies between classes
  */
 public class TypeDependency {
+
+    public enum DependencyType {
+        EXTENDS,
+        IMPLEMENTS,
+        INSTANTIATION,
+        FIELD_TYPE,
+        METHOD_PARAMETER,
+        METHOD_RETURN
+    }
+
     private final String sourceType;
     private final String targetType;
     private final DependencyType type;

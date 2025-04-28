@@ -4,7 +4,6 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
 import lib.report.ClassDepsReport;
@@ -12,7 +11,7 @@ import lib.utils.TypeDependency;
 
 import java.util.*;
 
-import static lib.utils.DependencyType.*;
+import static lib.utils.TypeDependency.DependencyType.*;
 
 /**
  * Visitor for the analysis of dependencies in Java classes.
@@ -70,7 +69,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
             Type type = variable.getType();
             try {
                 String typeName = resolveTypeName(type);
-                if (!shouldExcludeType(typeName)) {
+                if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, FIELD_TYPE,
                             "field " + variable.getNameAsString()
@@ -89,7 +88,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         Type returnType = n.getType();
         try {
             String typeName = resolveTypeName(returnType);
-            if (!shouldExcludeType(typeName)) {
+            if (shouldExcludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, METHOD_RETURN,
                         "method " + n.getNameAsString() + " return"
@@ -102,7 +101,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         for (Parameter parameter : n.getParameters()) {
             try {
                 String typeName = resolveTypeName(parameter.getType());
-                if (!shouldExcludeType(typeName)) {
+                if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, METHOD_PARAMETER,
                             "method " + n.getNameAsString() + " param " + parameter.getNameAsString()
@@ -151,26 +150,18 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         return type.asString();
     }
 
-    private String resolveTypeName(ClassOrInterfaceType type) {
-        try {
-            ResolvedReferenceTypeDeclaration resolved = (ResolvedReferenceTypeDeclaration) type.resolve();
-            return resolved.getQualifiedName();
-        } catch (Exception ignored) {
-            return type.getNameAsString();
-        }
-    }
-
     // Exclude void and primitive types
     private boolean shouldExcludeType(String typeName) {
         if (typeName == null
                 || typeName.isEmpty()
                 || typeName.equals("void")
-                || isPrimitiveType(typeName)) {
+                || isPrimitiveType(typeName)
+                || isArrayType(typeName)) {
             return false;
         }
         // Exclude base package types (java.lang, etc.)
         for (String excludedPackage : this.excludedPackages) {
-            if (typeName.startsWith(excludedPackage + ".")) {
+            if (typeName.startsWith(excludedPackage)) {
                 return false;
             }
         }
@@ -178,4 +169,10 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         return !typeName.equals(sourceClassName);}
 
     private boolean isPrimitiveType(String typeName) {
-        return Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName);}}
+        return Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName);
+    }
+
+    private boolean isArrayType(String typeName) {
+        return typeName.endsWith("[]");
+    }
+}
