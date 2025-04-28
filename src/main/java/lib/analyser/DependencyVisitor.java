@@ -12,7 +12,7 @@ import lib.utils.TypeDependency;
 
 import java.util.*;
 
-import static lib.utils.TypeDependency.DependencyType;
+import static lib.utils.DependencyType.*;
 
 /**
  * Visitor for the analysis of dependencies in Java classes.
@@ -39,7 +39,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 String typeName = resolveTypeName(extendedType);
                 if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
-                            sourceClassName, typeName, DependencyType.EXTENDS,
+                            sourceClassName, typeName, EXTENDS,
                             "class " + n.getNameAsString()
                     ));
                 }
@@ -52,7 +52,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 String typeName = resolveTypeName(implementedType);
                 if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
-                            sourceClassName, typeName, DependencyType.IMPLEMENTS,
+                            sourceClassName, typeName, IMPLEMENTS,
                             "class " + n.getNameAsString()
                     ));
                 }
@@ -65,19 +65,18 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
 
     @Override
     public void visit(FieldDeclaration n, Void arg) {
-        // Controlla i tipi dei campi
+        // Check field declarations
         for (VariableDeclarator variable : n.getVariables()) {
             Type type = variable.getType();
             try {
                 String typeName = resolveTypeName(type);
                 if (!shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
-                            sourceClassName, typeName, DependencyType.FIELD_TYPE,
+                            sourceClassName, typeName, FIELD_TYPE,
                             "field " + variable.getNameAsString()
                     ));
                 }
             } catch (Exception ignored) {
-                // Ignora se non è possibile risolvere il tipo
             }
         }
 
@@ -86,32 +85,30 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
 
     @Override
     public void visit(MethodDeclaration n, Void arg) {
-        // Controlla il tipo di ritorno
+        // Check return type
         Type returnType = n.getType();
         try {
             String typeName = resolveTypeName(returnType);
             if (!shouldExcludeType(typeName)) {
                 report.addDependency(new TypeDependency(
-                        sourceClassName, typeName, DependencyType.METHOD_RETURN,
+                        sourceClassName, typeName, METHOD_RETURN,
                         "method " + n.getNameAsString() + " return"
                 ));
             }
         } catch (Exception ignored) {
-            // Ignora se non è possibile risolvere il tipo
         }
 
-        // Controlla i parametri
+        // Check parameters
         for (Parameter parameter : n.getParameters()) {
             try {
                 String typeName = resolveTypeName(parameter.getType());
                 if (!shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
-                            sourceClassName, typeName, DependencyType.METHOD_PARAMETER,
+                            sourceClassName, typeName, METHOD_PARAMETER,
                             "method " + n.getNameAsString() + " param " + parameter.getNameAsString()
                     ));
                 }
             } catch (Exception ignored) {
-                // Ignora se non è possibile risolvere il tipo
             }
         }
 
@@ -125,7 +122,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
             String typeName = resolveTypeName(n.getType());
             if (shouldExcludeType(typeName)) {
                 report.addDependency(new TypeDependency(
-                        sourceClassName, typeName, DependencyType.INSTANTIATION,
+                        sourceClassName, typeName, INSTANTIATION,
                         n.getParentNode().map(Object::toString).orElse("unknown")
                 ));
             }
@@ -148,8 +145,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                     return referenceType.getQualifiedName();
                 }
             }
-        } catch (Exception e) {
-            // Fallback al nome semplice se la risoluzione fallisce
+        } catch (Exception ignored) {
         }
 
         return type.asString();
@@ -159,7 +155,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         try {
             ResolvedReferenceTypeDeclaration resolved = (ResolvedReferenceTypeDeclaration) type.resolve();
             return resolved.getQualifiedName();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
             return type.getNameAsString();
         }
     }

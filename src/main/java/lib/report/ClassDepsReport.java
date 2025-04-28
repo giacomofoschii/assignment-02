@@ -1,7 +1,7 @@
 package lib.report;
 
 import lib.utils.TypeDependency;
-import lib.utils.TypeDependency.DependencyType;
+import lib.utils.DependencyType;
 
 import java.util.*;
 

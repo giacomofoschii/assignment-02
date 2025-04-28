@@ -11,15 +11,6 @@ public class TypeDependency {
     private final DependencyType type;
     private final String location;
 
-    public enum DependencyType {
-        EXTENDS,
-        IMPLEMENTS,
-        INSTANTIATION,
-        FIELD_TYPE,
-        METHOD_PARAMETER,
-        METHOD_RETURN
-    }
-
     public TypeDependency(String sourceType, String targetType, DependencyType type, String location) {
         this.sourceType = sourceType;
         this.targetType = targetType;
