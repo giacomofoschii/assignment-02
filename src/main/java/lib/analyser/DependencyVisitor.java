@@ -40,7 +40,8 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, EXTENDS,
-                            "class " + n.getNameAsString()
+                            "extends " + extendedType,
+                            extendedType.getBegin().map(pos -> pos.line).orElse(-1)
                     ));
                 }
             } catch (Exception ignored) {
@@ -53,7 +54,8 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, IMPLEMENTS,
-                            "class " + n.getNameAsString()
+                            "implements " + implementedType,
+                            implementedType.getBegin().map(pos -> pos.line).orElse(-1)
                     ));
                 }
             } catch (Exception ignored) {
@@ -74,7 +76,8 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                     if (shouldExcludeType(typeName)) {
                         report.addDependency(new TypeDependency(
                                 sourceClassName, typeName, FIELD,
-                                "field " + variable.getNameAsString()
+                                variable.getType() + " " + variable.getName(),
+                                variable.getBegin().map(pos -> pos.line).orElse(-1)
                         ));
                     }
                 } catch (Exception ignored) {
@@ -94,7 +97,8 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
             if (shouldExcludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, METHOD_RETURN,
-                        "method " + n.getNameAsString() + " return"
+                        returnType + " " + n.getName() + "()",
+                        returnType.getBegin().map(pos -> pos.line).orElse(-1)
                 ));
             }
         } catch (Exception ignored) {
@@ -107,7 +111,8 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, METHOD_PARAMETER,
-                            "method " + n.getNameAsString() + " param " + parameter.getNameAsString()
+                            parameter.toString(),
+                            parameter.getBegin().map(pos -> pos.line).orElse(-1)
                     ));
                 }
             } catch (Exception ignored) {
@@ -125,7 +130,8 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
             if (shouldExcludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, INSTANTIATION,
-                        n.getParentNode().map(Object::toString).orElse("unknown")
+                        "new " + n.getType() + "()",
+                        n.getBegin().map(pos -> pos.line).orElse(-1)
                 ));
             }
         } catch (Exception ignored) {
@@ -145,7 +151,8 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
             if (shouldExcludeType(importedName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, importedName, IMPORT,
-                        "import statement"
+                        "import " + importedName + ";",
+                        n.getBegin().map(pos -> pos.line).orElse(-1)
                 ));
             }
         }

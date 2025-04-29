@@ -49,7 +49,9 @@ public class ClassDepsReport {
             sb.append("\t").append(entry.getKey()).append(":\n");
             for (TypeDependency dep : entry.getValue()) {
                 sb.append("\t").append(dep.getTargetType())
-                        .append(" (at ").append(dep.getLocation()).append(")\n");
+                        .append(" (code: ").append(dep.getSourceCode())
+                        .append(" at line: ").append(dep.getLineNumber())
+                        .append(")\n");
             }
         }
         sb.append("---------------------END-CLASS----------------------\n");

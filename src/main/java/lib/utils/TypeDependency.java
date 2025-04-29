@@ -20,29 +20,37 @@ public class TypeDependency {
     private final String sourceType;
     private final String targetType;
     private final DependencyType type;
-    private final String location;
+    private final String previewCode;
+    private final int lineNum;
 
-    public TypeDependency(String sourceType, String targetType, DependencyType type, String location) {
+    public TypeDependency(String sourceType, String targetType, DependencyType type, String previewCode, int lineNum) {
         this.sourceType = sourceType;
         this.targetType = targetType;
         this.type = type;
-        this.location = location;
+        this.previewCode = previewCode;
+        this.lineNum = lineNum;
     }
 
     public String getSourceType() {
-        return sourceType;
+        return this.sourceType;
     }
 
     public String getTargetType() {
-        return targetType;
+        return this.targetType;
     }
 
     public DependencyType getType() {
-        return type;
+        return this.type;
     }
 
-    public String getLocation() {
-        return location;
+    public String getSourceCode() {return this.previewCode;}
+
+    public int getLineNumber() {
+        return this.lineNum;
+    }
+
+    public boolean hasLineNumber() {
+        return this.lineNum > 0;
     }
 
     @Override
@@ -52,12 +60,19 @@ public class TypeDependency {
         TypeDependency that = (TypeDependency) o;
         return Objects.equals(sourceType, that.sourceType) &&
                 Objects.equals(targetType, that.targetType) &&
-                type == that.type &&
-                Objects.equals(location, that.location);
+                type == that.type && lineNum == that.lineNum &&
+                Objects.equals(previewCode, that.previewCode);
     }
 
     @Override
     public String toString() {
-        return sourceType + " -> " + targetType + " (" + type + " at " + location + ")";
+        StringBuilder sb = new StringBuilder(this.sourceType).append(" -> ").append(targetType).append(" (").append(type);
+
+        if (this.previewCode != null && hasLineNumber()) {
+            sb.append(": ").append(this.previewCode);
+            sb.append(" at line: ").append(this.lineNum);
+        }
+        sb.append(")");
+        return sb.toString();
     }
 }
