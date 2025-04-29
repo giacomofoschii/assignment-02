@@ -1,6 +1,5 @@
 package lib.analyser;
 
-import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.*;
@@ -158,10 +157,6 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         }
         super.visit(n, arg);
     }*/
-
-    public void addPackageToExclude(String packageName) {
-        this.excludedPackages.add(packageName);
-    }
 
     private String resolveTypeName(Type type) {
         try {
