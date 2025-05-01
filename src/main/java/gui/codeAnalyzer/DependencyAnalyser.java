@@ -4,9 +4,7 @@ import gui.codeAnalyzer.controller.AnalysisController;
 import gui.codeAnalyzer.view.AnalysisView;
 import javafx.application.Application;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
+import javafx.scene.control.*;
 import javafx.stage.Stage;
 
 public class DependencyAnalyser extends Application {

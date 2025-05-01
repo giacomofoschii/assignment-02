@@ -12,7 +12,7 @@ repositories {
 }
 
 javafx {
-    version = "24"
+    version = "21"
     modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics")
 }
 
@@ -43,9 +43,4 @@ dependencies {
 
 tasks.getByName<Test>("test") {
     useJUnitPlatform()
-}
-
-java {
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
 }
