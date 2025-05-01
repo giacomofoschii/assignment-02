@@ -11,19 +11,36 @@ repositories {
     mavenCentral()
 }
 
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(21))
+    }
+}
+
+tasks.withType<JavaCompile> {
+    options.release.set(21)
+}
+
 javafx {
     version = "21"
     modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics")
 }
 
 application {
-    mainClass.set("gui.codeAnalyzer.DependencyAnalyser")
+    mainClass.set("gui.codeAnalyser.DependencyAnalyser")
     applicationDefaultJvmArgs = listOf(
         "--add-modules=javafx.controls,javafx.fxml,javafx.graphics",
         "--add-exports=javafx.graphics/com.sun.javafx.util=ALL-UNNAMED",
         "--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED",
         "--add-exports=javafx.graphics/com.sun.javafx.scene=ALL-UNNAMED"
     )
+}
+
+tasks.register<JavaExec>("runSimulationAnalyser") {
+    group = "application"
+    description = "Esegue la classe SimulationAnalyser"
+    mainClass.set("lib.analyser.SimulationAnalyser")
+    classpath = sourceSets["main"].runtimeClasspath
 }
 
 dependencies {

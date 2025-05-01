@@ -1,6 +1,6 @@
-package gui.codeAnalyzer.controller;
+package gui.codeAnalyser.controller;
 
-import gui.codeAnalyzer.view.AnalysisView;
+import gui.codeAnalyser.view.AnalysisView;
 import javafx.stage.DirectoryChooser;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;

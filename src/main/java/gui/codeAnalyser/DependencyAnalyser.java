@@ -1,7 +1,7 @@
-package gui.codeAnalyzer;
+package gui.codeAnalyser;
 
-import gui.codeAnalyzer.controller.AnalysisController;
-import gui.codeAnalyzer.view.AnalysisView;
+import gui.codeAnalyser.controller.AnalysisController;
+import gui.codeAnalyser.view.AnalysisView;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.control.*;

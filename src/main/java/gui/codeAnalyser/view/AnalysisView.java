@@ -1,4 +1,4 @@
-package gui.codeAnalyzer.view;
+package gui.codeAnalyser.view;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
