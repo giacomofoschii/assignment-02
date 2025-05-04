@@ -3,8 +3,6 @@ package gui.codeAnalyser;
 import gui.codeAnalyser.controller.AnalysisController;
 import gui.codeAnalyser.view.AnalysisView;
 import javafx.application.Application;
-import javafx.scene.Scene;
-import javafx.scene.control.*;
 import javafx.stage.Stage;
 
 public class DependencyAnalyser extends Application {
