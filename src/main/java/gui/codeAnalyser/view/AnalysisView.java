@@ -1,6 +1,7 @@
 package gui.codeAnalyser.view;
 
 import javafx.geometry.Insets;
+import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 
@@ -24,6 +25,10 @@ public class AnalysisView {
         setupTopPanel();
         setupCenterPanel();
         setupBottomPanel();
+    }
+
+    public Scene createScene() {
+        return new Scene(this.root, 1200, 800);
     }
 
     private void setupTopPanel() {
@@ -79,6 +84,22 @@ public class AnalysisView {
 
         bottomPanel.getChildren().addAll(classesCountLabel, dependenciesCountLabel);
         this.root.setBottom(bottomPanel);
+    }
+
+    public boolean showExitConfirmation() {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle("Exit Confirmation");
+        alert.setHeaderText("Are you sure you want to exit?");
+
+        ButtonType yesBtn = new ButtonType("Yes", ButtonBar.ButtonData.YES);
+        ButtonType noBtn = new ButtonType("No", ButtonBar.ButtonData.NO);
+
+        alert.getButtonTypes().setAll(yesBtn, noBtn);
+
+        alert.getDialogPane().lookupButton(yesBtn).setStyle("-fx-background-color: green; -fx-text-fill: white;");
+        alert.getDialogPane().lookupButton(noBtn).setStyle("-fx-background-color: red; -fx-text-fill: white;");
+
+        return alert.showAndWait().orElse(noBtn) == yesBtn;
     }
 
     public BorderPane getRoot() {

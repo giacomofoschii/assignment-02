@@ -23,33 +23,10 @@ public class DependencyAnalyser extends Application {
         AnalysisController controller = new AnalysisController(view);
 
         // Set up the main layout
-        Scene scene = new Scene(view.getRoot(), 1200, 800);
-        primaryStage.setScene(scene);
+        primaryStage.setScene(view.createScene());
 
-        primaryStage.setOnCloseRequest(e -> {
-            e.consume(); // Prevent default close action
-
-            //Confirmation dialog
-            Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-            alert.setTitle("Exit Confirmation");
-            alert.setHeaderText("Are you sure you want to exit?");
-
-            ButtonType yesButton = new ButtonType("Yes", ButtonBar.ButtonData.YES);
-            ButtonType noButton = new ButtonType("No", ButtonBar.ButtonData.NO);
-
-            alert.getButtonTypes().setAll(yesButton, noButton);
-
-            alert.getDialogPane().lookupButton(yesButton).setStyle("-fx-background-color: green; -fx-text-fill: white;");
-            alert.getDialogPane().lookupButton(noButton).setStyle("-fx-background-color: red; -fx-text-fill: white;");
-
-            alert.showAndWait().ifPresent(response -> {
-                if (response == yesButton) {
-                    controller.shutdown(); // Call shutdown method
-                    primaryStage.close(); // Close the application
-                }
-            });
-
-        });
+        // Set up the close request handler to clean up resources
+        controller.setupCloseHandler(primaryStage);
 
         primaryStage.show();
     }

@@ -2,6 +2,7 @@ package gui.codeAnalyser.controller;
 
 import gui.codeAnalyser.view.AnalysisView;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
 import org.graphstream.graph.Graph;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.graphstream.ui.fx_viewer.FxViewPanel;
@@ -56,7 +57,17 @@ public class AnalysisController {
         this.view.getStartButton().setOnAction(e -> startAnalysis());
     }
 
-    public void shutdown() {
+    public void setupCloseHandler(Stage stage) {
+        stage.setOnCloseRequest(e -> {
+            e.consume();
+            if (this.view.showExitConfirmation()) {
+                this.shutdown();
+                stage.close();
+            }
+        });
+    }
+
+    private void shutdown() {
         // Clean up graph viewer resources
         if (this.graphViewer != null) {
             try {
