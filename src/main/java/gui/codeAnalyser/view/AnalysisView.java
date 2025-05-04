@@ -28,7 +28,7 @@ public class AnalysisView {
     }
 
     public Scene createScene() {
-        return new Scene(this.root, 1200, 800);
+        return new Scene(this.root, 1000, 700);
     }
 
     private void setupTopPanel() {
