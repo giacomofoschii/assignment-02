@@ -6,12 +6,12 @@ import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
-import asynchronous.report.ClassDepsReport;
-import asynchronous.utils.TypeDependency;
+import common.report.ClassDepsReport;
+import common.util.TypeDependency;
 
 import java.util.*;
 
-import static asynchronous.utils.TypeDependency.DependencyType.*;
+import static common.util.TypeDependency.DependencyType.*;
 
 /**
  * Visitor for the analysis of dependencies in Java classes.

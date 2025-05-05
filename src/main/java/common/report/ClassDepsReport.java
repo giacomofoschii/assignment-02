@@ -1,7 +1,7 @@
-package asynchronous.report;
+package common.report;
 
-import asynchronous.utils.TypeDependency.DependencyType;
-import asynchronous.utils.TypeDependency;
+import common.util.TypeDependency;
+import common.util.TypeDependency.DependencyType;
 
 import java.util.*;
 
@@ -10,7 +10,6 @@ import java.util.*;
  * Result of a class-level dependency analysis.
  */
 public class ClassDepsReport {
-
     private final String className;
     private final Set<TypeDependency> dependencies;
 
@@ -20,7 +19,11 @@ public class ClassDepsReport {
     }
 
     public String getClassName() {
-        return className;
+        return this.className;
+    }
+
+    public Set<TypeDependency> getDependencies() {
+        return Collections.unmodifiableSet(this.dependencies);
     }
 
     public void addDependency(TypeDependency dependency) {

@@ -5,13 +5,14 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.*;
+import common.report.ClassDepsReport;
+import common.report.PackageDepsReport;
+import common.report.ProjectDepsReport;
 import io.vertx.core.*;
 
 import java.io.*;
 import java.nio.file.*;
 import java.util.*;
-
-import asynchronous.report.*;
 
 /**
  * Main class that provides asynchronous methods for analysing dependencies of classes,

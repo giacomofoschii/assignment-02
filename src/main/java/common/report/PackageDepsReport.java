@@ -1,4 +1,4 @@
-package asynchronous.report;
+package common.report;
 
 import java.util.*;
 
@@ -16,7 +16,11 @@ public class PackageDepsReport {
     }
 
     public String getPackageName() {
-        return packageName;
+        return this.packageName;
+    }
+
+    public Map<String, ClassDepsReport> getClassReports() {
+        return Collections.unmodifiableMap(this.classReports);
     }
 
     public void addClassReport(ClassDepsReport classReport) {
