@@ -27,7 +27,7 @@ javafx {
 }
 
 application {
-    mainClass.set("gui.codeAnalyser.DependencyAnalyser")
+    mainClass.set("gui.DependencyAnalyser")
     applicationDefaultJvmArgs = listOf(
         "--add-modules=javafx.controls,javafx.fxml,javafx.graphics",
         "--add-exports=javafx.graphics/com.sun.javafx.util=ALL-UNNAMED",

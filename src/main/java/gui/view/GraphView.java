@@ -1,4 +1,4 @@
-package gui.codeAnalyser.view;
+package gui.view;
 
 import javafx.scene.layout.Pane;
 import org.graphstream.ui.fx_viewer.FxViewPanel;

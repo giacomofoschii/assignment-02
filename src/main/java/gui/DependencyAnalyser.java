@@ -1,9 +1,12 @@
-package gui.codeAnalyser;
+package gui;
 
-import gui.codeAnalyser.controller.AnalysisController;
-import gui.codeAnalyser.view.AnalysisView;
+import gui.controller.AnalysisController;
+import gui.view.AnalysisView;
 import javafx.application.Application;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
+
+import java.util.Objects;
 
 public class DependencyAnalyser extends Application {
 
@@ -15,6 +18,10 @@ public class DependencyAnalyser extends Application {
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Dependency Analyzer");
+        /*primaryStage.getIcons().add(
+                new Image(Objects.requireNonNull(getClass()
+                        .getResourceAsStream("/icon.png")))
+        );*/
 
         //Initialize view and controller
         AnalysisView view = new AnalysisView();
