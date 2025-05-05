@@ -4,6 +4,11 @@ import javafx.geometry.Insets;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.scene.image.Image;
+import javafx.stage.Stage;
+
+import java.util.Objects;
+
 
 /**
  * Main view class that composes the UI elements for the dependency analyzer.
@@ -90,6 +95,8 @@ public class AnalysisView {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Exit Confirmation");
         alert.setHeaderText("Are you sure you want to exit?");
+        Stage stage = (Stage) alert.getDialogPane().getScene().getWindow();
+        stage.getIcons().add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icon.png"))));
 
         ButtonType yesBtn = new ButtonType("Yes", ButtonBar.ButtonData.YES);
         ButtonType noBtn = new ButtonType("No", ButtonBar.ButtonData.NO);

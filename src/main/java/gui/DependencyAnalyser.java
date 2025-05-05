@@ -18,10 +18,8 @@ public class DependencyAnalyser extends Application {
     @Override
     public void start(Stage primaryStage) {
         primaryStage.setTitle("Dependency Analyzer");
-        primaryStage.getIcons().add(
-                new Image(Objects.requireNonNull(getClass()
-                        .getResourceAsStream("/resources/icon.png")))
-        );
+        primaryStage.getIcons()
+                .add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icon.png"))));
 
         //Initialize view and controller
         AnalysisView view = new AnalysisView();
