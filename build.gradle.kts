@@ -27,7 +27,7 @@ javafx {
 }
 
 application {
-    mainClass.set("gui.DependencyAnalyser")
+    mainClass.set("reactive.DependencyAnalyser")
     applicationDefaultJvmArgs = listOf(
         "--add-modules=javafx.controls,javafx.fxml,javafx.graphics",
         "--add-exports=javafx.graphics/com.sun.javafx.util=ALL-UNNAMED",
@@ -39,7 +39,7 @@ application {
 tasks.register<JavaExec>("runSimulationAnalyser") {
     group = "application"
     description = "Esegue la classe SimulationAnalyser"
-    mainClass.set("lib.analyser.SimulationAnalyser")
+    mainClass.set("asynchronous.SimulationAnalyser")
     classpath = sourceSets["main"].runtimeClasspath
 }
 

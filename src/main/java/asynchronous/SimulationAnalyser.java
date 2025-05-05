@@ -1,5 +1,6 @@
-package asynchronous.analyser;
+package asynchronous;
 
+import asynchronous.analyser.DependencyAnalyserVerticle;
 import io.vertx.core.Vertx;
 
 public class SimulationAnalyser {
