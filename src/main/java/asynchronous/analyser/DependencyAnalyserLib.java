@@ -1,4 +1,4 @@
-package lib.analyser;
+package asynchronous.analyser;
 
 import com.github.javaparser.*;
 import com.github.javaparser.ast.CompilationUnit;
@@ -11,7 +11,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
-import lib.report.*;
+import asynchronous.report.*;
 
 /**
  * Main class that provides asynchronous methods for analysing dependencies of classes,

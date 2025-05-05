@@ -1,4 +1,4 @@
-package gui.view;
+package reactive.view;
 
 import javafx.scene.layout.Pane;
 import org.graphstream.ui.fx_viewer.FxViewPanel;

@@ -1,4 +1,4 @@
-package lib.analyser;
+package asynchronous.analyser;
 
 import io.vertx.core.Vertx;
 

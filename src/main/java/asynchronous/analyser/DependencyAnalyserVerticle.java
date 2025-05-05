@@ -1,7 +1,7 @@
-package lib.analyser;
+package asynchronous.analyser;
 
 import io.vertx.core.*;
-import lib.report.*;
+import asynchronous.report.*;
 
 import java.nio.file.Path;
 

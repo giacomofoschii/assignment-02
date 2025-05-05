@@ -1,7 +1,7 @@
-package gui;
+package reactive;
 
-import gui.controller.AnalysisController;
-import gui.view.AnalysisView;
+import reactive.controller.AnalysisController;
+import reactive.view.AnalysisView;
 import javafx.application.Application;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
