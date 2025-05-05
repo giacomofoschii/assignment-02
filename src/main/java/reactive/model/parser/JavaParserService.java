@@ -15,7 +15,7 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 /**
- * Servizio per il parsing dei file Java utilizzando JavaParser.
+ * Parse Java files and infer package names
  */
 public class JavaParserService {
     private final JavaParser parser;
@@ -25,9 +25,9 @@ public class JavaParserService {
     }
 
     /**
-     * Configura il JavaParser con il source path per risolvere le dipendenze
+     * configure the source path for the JavaParser
      *
-     * @param projectRoot La directory radice del progetto
+     * @param projectRoot root directory of the project
      */
     public void configureSourcePath(File projectRoot) {
         if (projectRoot != null && projectRoot.exists() && projectRoot.isDirectory()) {
@@ -41,10 +41,10 @@ public class JavaParserService {
     }
 
     /**
-     * Parsa un file Java e restituisce la CompilationUnit
+     * Parse a Java file and return the CompilationUnit
      *
-     * @param javaFile Il file Java da parsare
-     * @return Un Single con la CompilationUnit risultante o errore
+     * @param javaFile The Java file to parse
+     * @return A Single with the CompilationUnit or an error if parsing fails
      */
     public Single<CompilationUnit> parseJavaFile(File javaFile) {
         return Single.fromCallable(() -> {
@@ -59,10 +59,9 @@ public class JavaParserService {
     }
 
     /**
-     * Inferisce il nome del pacchetto da un file Java
-     *
-     * @param javaFile Il file Java
-     * @return Un Single con il nome del pacchetto o vuoto se non trovato
+     * Infer the package name from a Java file
+     * @param javaFile The Java file to parse
+     * @return A Single with the package name or an empty string if not found
      */
     public Single<String> inferPackageName(File javaFile) {
         return parseJavaFile(javaFile)
@@ -71,11 +70,10 @@ public class JavaParserService {
                         .orElse(""));
     }
 
-    /**
-     * Inferisce il nome del pacchetto da una directory contenente file Java
-     *
-     * @param packageDir La directory del pacchetto
-     * @return Un Single con il nome del pacchetto o il nome della directory se non trovato
+   /**
+     * Infer the package name from a directory containing Java files
+     * @param packageDir The directory containing Java files
+     * @return A Single with the package name or the directory name if not found
      */
     public Single<String> inferPackageNameFromDir(File packageDir) {
         File[] javaFiles = packageDir.listFiles((dir, name) -> name.endsWith(".java"));
@@ -86,10 +84,10 @@ public class JavaParserService {
         return Single.just(packageDir.getName());
     }
     /**
-     * Crea un JavaParser configurato con un resolver di simboli
+     * create a configured JavaParser instance
      *
-     * @param typeSolver Il risolutore di tipo da utilizzare
-     * @return Il JavaParser configurato
+     * @param typeSolver the type solver to use
+     * @return a configured JavaParser instance
      */
     private JavaParser createConfiguredParser(CombinedTypeSolver typeSolver) {
         JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
