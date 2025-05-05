@@ -8,7 +8,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 import io.reactivex.rxjava3.core.Single;
-import reactive.model.report.ClassDepsReport;
+
 
 import java.io.File;
 import java.nio.file.Path;
