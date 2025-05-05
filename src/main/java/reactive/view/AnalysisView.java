@@ -1,4 +1,4 @@
-package gui.view;
+package reactive.view;
 
 import javafx.geometry.Insets;
 import javafx.scene.Scene;

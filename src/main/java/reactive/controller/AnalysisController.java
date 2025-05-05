@@ -1,6 +1,6 @@
-package gui.controller;
+package reactive.controller;
 
-import gui.view.AnalysisView;
+import reactive.view.AnalysisView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import org.graphstream.graph.Graph;
