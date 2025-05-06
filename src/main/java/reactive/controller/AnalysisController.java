@@ -1,222 +1,204 @@
 package reactive.controller;
 
-import reactive.view.AnalysisView;
-import reactive.model.ReactiveDependencyAnalyser;
-import common.util.TypeDependency;
+import io.reactivex.rxjava3.core.BackpressureOverflowStrategy;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
+import io.reactivex.rxjava3.exceptions.MissingBackpressureException;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import io.reactivex.rxjava3.core.Observable;
 import javafx.application.Platform;
-import javafx.stage.DirectoryChooser;
-import javafx.stage.Stage;
-import org.graphstream.graph.Graph;
-import org.graphstream.graph.Node;
-import org.graphstream.graph.Edge;
+import org.graphstream.graph.*;
 import org.graphstream.graph.implementations.SingleGraph;
-import org.graphstream.ui.fx_viewer.FxViewPanel;
-import org.graphstream.ui.fx_viewer.FxViewer;
+import org.graphstream.ui.fx_viewer.*;
 import org.graphstream.ui.view.Viewer;
+import reactive.model.*;
+import reactive.view.AnalysisView;
 
-import java.io.File;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Controller class that handles the business logic for dependency analysis.
+ * Controller class for the dependency analysis application
  */
 public class AnalysisController {
+    private static final int BUFFER_SIZE = 1000;
     private final AnalysisView view;
-    private final Graph graph;
-    private final ReactiveDependencyAnalyser analyser;
+    private final ReactiveDependencyAnalyser model;
     private final CompositeDisposable disposables;
-    private File selectedFolder;
-    private Viewer graphViewer;
+    private String projectFolder;
+    private final AtomicInteger classCount = new AtomicInteger(0);
+    private final AtomicInteger dependencyCount = new AtomicInteger(0);
+    private final Graph graph;
+    private final Map<String, String> nodeIdMap = new HashMap<>();
 
-    public AnalysisController(AnalysisView view) {
+    public AnalysisController(AnalysisView view, ReactiveDependencyAnalyser model) {
         this.view = view;
-        this.graph = this.initializeGraph();
-        this.analyser = new ReactiveDependencyAnalyser();
+        this.model = model;
         this.disposables = new CompositeDisposable();
 
-        this.initializeEventHandlers();
-    }
+        // Initialize the graph
+        System.setProperty("org.graphstream.ui", "javafx");
+        this.graph = new SingleGraph("dependencies");
 
-    private Graph initializeGraph() {
-        Graph graph = new SingleGraph("Dependencies");
+        // Set up the graph styling
         graph.setAttribute("ui.stylesheet",
-                "node { size: 30px; text-size: 12px; text-color: #000; fill-color: #B3E5FC; stroke-mode: plain; stroke-color: #0288D1; } " +
-                        "edge { arrow-shape: arrow; arrow-size: 12px, 6px; fill-color: #757575; }");
-        return graph;
+                "node { size: 10px; fill-color: #66B2FF; text-size: 12; } " +
+                        "edge { arrow-size: 5px, 3px; }");
     }
 
-    private void initializeEventHandlers() {
-        this.view.getFolderButton().setOnAction(e -> {
-            DirectoryChooser directoryChooser = new DirectoryChooser();
-            directoryChooser.setTitle("Select Project Root Directory");
-            this.selectedFolder = directoryChooser.showDialog(null);
-
-            if (this.selectedFolder != null) {
-                this.view.appendLog("Selected folder: " + this.selectedFolder.getAbsolutePath() + "\n");
-                this.view.getStartButton().setDisable(false);
-            } else {
-                this.view.appendLog("No folder selected.\n");
-                this.view.getStartButton().setDisable(true);
-            }
-        });
-
-        // Set action for start analysis button
-        this.view.getStartButton().setOnAction(e -> startAnalysis());
+    /**
+     * Set the project folder to analyze
+     * @param path the path to the project folder
+     */
+    public void setProjectFolder(String path) {
+        this.projectFolder = path;
     }
 
-    public void setupCloseHandler(Stage stage) {
-        stage.setOnCloseRequest(e -> {
-            e.consume();
-            if (this.view.showExitConfirmation()) {
-                this.shutdown();
-                stage.close();
-            }
-        });
-    }
-
-    private void shutdown() {
-        // Clean up reactive disposables
-        if (!disposables.isDisposed()) {
-            disposables.dispose();
-        }
-
-        // Clean up graph viewer resources
-        if (this.graphViewer != null) {
-            try {
-                this.graphViewer.close();
-                this.view.appendLog("Graph viewer resources released.\n");
-            } catch (Exception e) {
-                this.view.appendLog("Error during graph viewer shutdown: " + e.getMessage() + "\n");
-            }
-        }
-
-        // Clean up graph resources
-        if (this.graph != null) {
-            this.graph.clear();
-        }
-    }
-
+    /**
+     * Start the dependency analysis process
+     */
     public void startAnalysis() {
-        if (this.selectedFolder == null) {
-            this.view.appendLog("Please select a project folder first.\n");
+        if (projectFolder == null || projectFolder.isEmpty()) {
+            view.appendLog("Error: No project folder selected\n");
             return;
         }
 
-        // Reset the Interface
-        this.view.clearLog();
-        this.view.updateClassesCount(0);
-        this.view.updateDependenciesCount(0);
-        this.graph.clear();
+        // Reset state
+        resetAnalysis();
 
-        // Set button state
-        this.view.getStartButton().setDisable(true);
+        view.appendLog("Starting analysis of: " + projectFolder + "\n");
+        view.getStartButton().setDisable(true);
+        view.getFolderButton().setDisable(true);
 
-        // Log the start of analysis
-        this.view.appendLog("Starting analysis of folder: " + this.selectedFolder.getAbsolutePath() + "\n");
+        // Process the Java files reactively
+        disposables.add(
+                model.getJavaFiles(projectFolder)
+                        .onBackpressureBuffer(BUFFER_SIZE, () -> {}, BackpressureOverflowStrategy.ERROR)
+                        .map(model::parseClassDependencies)
+                        .observeOn(Schedulers.single())
+                        .subscribe(
+                                classDep -> {
+                                    // Update counters
+                                    classCount.incrementAndGet();
+                                    dependencyCount.addAndGet(classDep.getDependencyCount());
 
-        try {
-            // Initialize and setup graph viewer
-            this.graphViewer = new FxViewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD);
-            this.graphViewer.enableAutoLayout();
-            FxViewPanel viewPanel = (FxViewPanel) this.graphViewer.addDefaultView(false);
+                                    // Update UI
+                                    Platform.runLater(() -> {
+                                        view.updateClassesCount(classCount.get());
+                                        view.updateDependenciesCount(dependencyCount.get());
+                                        view.appendLog("Analyzed class: " + classDep.getClassName() +
+                                                " - Dependencies: " + classDep.getDependencyCount() + "\n");
 
-            // Add the graph view to the UI
-            this.view.getGraphView().displayGraph(viewPanel);
-
-            // Set of processed class names to avoid duplication in the graph
-            Set<String> processedClasses = new HashSet<>();
-            Set<String> processedEdges = new HashSet<>();
-
-            // Start the reactive analysis of the project
-            disposables.add(
-                    analyser.analyzeProject(selectedFolder)
-                            .subscribeOn(Schedulers.io())
-                            .flatMap(projectReport -> {
-                                // Process all packages and their classes
-                                return Observable.fromIterable(projectReport.getPackageReports().values())
-                                        .flatMap(packageReport ->
-                                                Observable.fromIterable(packageReport.getClassReports().values())
-                                        );
-                            })
-                            .observeOn(Schedulers.single()) // Process graph operations on a single thread
-                            .subscribe(
-                                    // OnNext - Process each class report
-                                    classReport -> {
-                                        String className = classReport.getClassName();
-
-                                        // Update UI with current progress
-                                        Platform.runLater(() -> {
-                                            this.view.updateClassesCount(analyser.getClassCounter().get());
-                                            this.view.updateDependenciesCount(analyser.getDependencyCounter().get());
-                                        });
-
-                                        // Add source class node if not exists
-                                        if (!processedClasses.contains(className)) {
-                                            processedClasses.add(className);
-
-                                            Platform.runLater(() -> {
-                                                Node node = graph.addNode(className);
-                                                // Use simple name for display
-                                                String simpleClassName = className.contains(".") ?
-                                                        className.substring(className.lastIndexOf('.') + 1) : className;
-                                                node.setAttribute("ui.label", simpleClassName);
-                                            });
+                                        // Update graph
+                                        updateGraph(classDep);
+                                    });
+                                },
+                                error -> {
+                                    Platform.runLater(() -> {
+                                        if (error instanceof MissingBackpressureException) {
+                                            view.appendLog("Error: Too many classes, buffer full\n");
+                                        } else {
+                                            view.appendLog("Error: " + error.getMessage() + "\n");
                                         }
+                                        view.getStartButton().setDisable(false);
+                                        view.getFolderButton().setDisable(false);
+                                    });
+                                },
+                                () -> {
+                                    Platform.runLater(() -> {
+                                        view.appendLog("Analysis completed!\n");
+                                        view.appendLog("Total classes: " + classCount.get() + "\n");
+                                        view.appendLog("Total dependencies: " + dependencyCount.get() + "\n");
+                                        view.getStartButton().setDisable(false);
+                                        view.getFolderButton().setDisable(false);
+                                    });
+                                }
+                        )
+        );
+    }
 
-                                        // Process dependencies
-                                        for (TypeDependency dep : classReport.getDependencies()) {
-                                            String targetClass = dep.getTargetType();
-                                            String edgeId = className + "->" + targetClass;
+    /**
+     * Reset the analysis state
+     */
+    private void resetAnalysis() {
+        // Clear counters
+        classCount.set(0);
+        dependencyCount.set(0);
 
-                                            // Add target class node if not exists
-                                            if (!processedClasses.contains(targetClass)) {
-                                                processedClasses.add(targetClass);
+        // Update UI
+        view.clearLog();
+        view.updateClassesCount(0);
+        view.updateDependenciesCount(0);
 
-                                                Platform.runLater(() -> {
-                                                    Node node = graph.addNode(targetClass);
-                                                    // Use simple name for display
-                                                    String simpleClassName = targetClass.contains(".") ?
-                                                            targetClass.substring(targetClass.lastIndexOf('.') + 1) : targetClass;
-                                                    node.setAttribute("ui.label", simpleClassName);
-                                                });
-                                            }
+        // Clear graph
+        graph.clear();
+        nodeIdMap.clear();
 
-                                            // Add edge if not exists
-                                            if (!processedEdges.contains(edgeId)) {
-                                                processedEdges.add(edgeId);
+        // Create a new viewer for the graph
+        FxViewer viewer = new FxViewer(graph, Viewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
+        viewer.enableAutoLayout();
+        FxViewPanel viewPanel = (FxViewPanel) viewer.addDefaultView(false);
 
-                                                Platform.runLater(() -> {
-                                                    Edge edge = graph.addEdge(edgeId, className, targetClass, true);
-                                                    edge.setAttribute("ui.label", dep.getType().toString().toLowerCase());
-                                                });
-                                            }
-                                        }
-                                    },
-                                    // OnError - Handle errors
-                                    error -> {
-                                        Platform.runLater(() -> {
-                                            this.view.appendLog("Error during analysis: " + error.getMessage() + "\n");
-                                            this.view.getStartButton().setDisable(false);
-                                        });
-                                    },
-                                    // OnComplete - All done
-                                    () -> {
-                                        Platform.runLater(() -> {
-                                            this.view.appendLog("Analysis complete. Built dependency graph with " +
-                                                    processedClasses.size() + " nodes and " + processedEdges.size() + " edges.\n");
-                                            this.view.getStartButton().setDisable(false);
-                                        });
-                                    }
-                            )
-            );
+        // Display the graph
+        Platform.runLater(() -> view.getGraphView().displayGraph(viewPanel));
+    }
 
-        } catch (Exception e) {
-            this.view.appendLog("Error initializing graph viewer: " + e.getMessage() + "\n");
-            this.view.getStartButton().setDisable(false);
+    /**
+     * Update the graph with a new class dependency
+     * @param classDep the class dependency to add to the graph
+     */
+    private void updateGraph(ClassDependency classDep) {
+        // Simplify class names for display
+        String className = simplifyClassName(classDep.getClassName());
+        String nodeId = getOrCreateNodeId(className);
+
+        // Add the node if it doesn't exist
+        if (graph.getNode(nodeId) == null) {
+            Node node = graph.addNode(nodeId);
+            node.setAttribute("ui.label", className);
         }
+
+        // Add dependencies as edges
+        for (String dependency : classDep.getDependencies()) {
+            String depName = simplifyClassName(dependency);
+            String depNodeId = getOrCreateNodeId(depName);
+
+            // Add the dependency node if it doesn't exist
+            if (graph.getNode(depNodeId) == null) {
+                Node depNode = graph.addNode(depNodeId);
+                depNode.setAttribute("ui.label", depName);
+            }
+
+            // Add an edge if it doesn't exist
+            String edgeId = nodeId + "-" + depNodeId;
+            if (graph.getEdge(edgeId) == null) {
+                graph.addEdge(edgeId, nodeId, depNodeId, true);
+            }
+        }
+    }
+
+    /**
+     * Simplify a fully qualified class name for display
+     * @param fullName the fully qualified class name
+     * @return the simplified class name
+     */
+    private String simplifyClassName(String fullName) {
+        // Get the simple class name (without package)
+        int lastDot = fullName.lastIndexOf('.');
+        return lastDot > 0 ? fullName.substring(lastDot + 1) : fullName;
+    }
+
+    /**
+     * Get or create a node ID for a class name
+     * @param className the class name
+     * @return the node ID
+     */
+    private String getOrCreateNodeId(String className) {
+        return nodeIdMap.computeIfAbsent(className, k -> "n" + nodeIdMap.size());
+    }
+
+    /**
+     * Shutdown the controller and dispose resources
+     */
+    public void shutdown() {
+        disposables.dispose();
     }
 }

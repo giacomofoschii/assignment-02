@@ -1,36 +1,66 @@
 package reactive;
 
-import reactive.controller.AnalysisController;
-import reactive.view.AnalysisView;
 import javafx.application.Application;
-import javafx.scene.image.Image;
-import javafx.stage.Stage;
+import javafx.stage.*;
+import reactive.controller.AnalysisController;
+import reactive.model.ReactiveDependencyAnalyser;
+import reactive.view.AnalysisView;
 
-import java.util.Objects;
+import java.io.File;
 
 public class DependencyAnalyser extends Application {
 
+    private AnalysisController controller;
+
     public static void main(String[] args) {
-        System.setProperty("org.graphstream.ui", "javafx"); // Set this before launch
         launch(args);
     }
 
     @Override
     public void start(Stage primaryStage) {
-        primaryStage.setTitle("Dependency Analyzer");
-        primaryStage.getIcons()
-                .add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icon.png"))));
-
-        //Initialize view and controller
+        // Set up MVC components
         AnalysisView view = new AnalysisView();
-        AnalysisController controller = new AnalysisController(view);
+        ReactiveDependencyAnalyser model = new ReactiveDependencyAnalyser();
+        this.controller = new AnalysisController(view, model);
 
-        // Set up the main layout
+        // Configure stage
+        primaryStage.setTitle("Java Dependency Analyzer");
         primaryStage.setScene(view.createScene());
 
-        // Set up the close request handler to clean up resources
-        controller.setupCloseHandler(primaryStage);
+        // Set up folder selection dialog
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Select Project Folder");
+
+        // Wire up the folder selection button
+        view.getFolderButton().setOnAction(e -> {
+            File selectedDirectory = directoryChooser.showDialog(primaryStage);
+            if (selectedDirectory != null) {
+                view.getStartButton().setDisable(false);
+                this.controller.setProjectFolder(selectedDirectory.getPath());
+                view.appendLog("Selected folder: " + selectedDirectory.getPath() + "\n");
+            }
+        });
+
+        // Wire up the start button
+        view.getStartButton().setOnAction(e -> this.controller.startAnalysis());
+
+        // Handle window close
+        primaryStage.setOnCloseRequest(e -> {
+            if (!view.showExitConfirmation()) {
+                e.consume();
+            } else {
+                this.controller.shutdown();
+            }
+        });
 
         primaryStage.show();
     }
+
+    @Override
+    public void stop() {
+        if (this.controller != null) {
+            this.controller.shutdown();
+        }
+    }
+
 }

@@ -1,7 +1,7 @@
-package common.report;
+package asynchronous.report;
 
-import common.util.TypeDependency;
-import common.util.TypeDependency.DependencyType;
+import asynchronous.util.TypeDependency;
+import asynchronous.util.TypeDependency.DependencyType;
 
 import java.util.*;
 

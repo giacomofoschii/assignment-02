@@ -1,199 +1,97 @@
 package reactive.model;
 
+import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import io.reactivex.rxjava3.core.*;
+import com.github.javaparser.ast.body.TypeDeclaration;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import reactive.model.parser.*;
-import common.report.*;
-import common.util.DependencyVisitor;
 
-import java.io.File;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
- * This class is responsible for analyzing the dependencies of a Java project.
- * It uses JavaParser to extract dependencies from the source files and models
- * them using a reactive approach with RxJava.
+ * Model class for dependency analysis using reactive streams
  */
 public class ReactiveDependencyAnalyser {
-    private final JavaParserService parserService;
-    private final AtomicInteger classCounter;
-    private final AtomicInteger dependencyCounter;
 
-    public ReactiveDependencyAnalyser() {
-        this.parserService = new JavaParserService();
-        this.classCounter = new AtomicInteger(0);
-        this.dependencyCounter = new AtomicInteger(0);
-    }
-
-    public AtomicInteger getClassCounter() {
-        return classCounter;
-    }
-
-    public AtomicInteger getDependencyCounter() {
-        return dependencyCounter;
+    /**
+     * Get all Java files from the given directory recursively
+     * @param projectPath the project root path
+     * @return a Flowable stream of Path objects for Java files
+     */
+    public Flowable<Path> getJavaFiles(String projectPath) {
+        return Flowable.defer(() -> {
+            try (Stream<Path> paths = Files.walk(Paths.get(projectPath))) {
+                Set<Path> javaFiles = paths
+                        .filter(Files::isRegularFile)
+                        .filter(p -> p.toString().endsWith(".java"))
+                        .collect(Collectors.toSet());
+                return Flowable.fromIterable(javaFiles);
+            } catch (IOException e) {
+                return Flowable.error(e);
+            }
+        }).subscribeOn(Schedulers.io());
     }
 
     /**
-     * Analyzes a single Java class file to extract its dependencies.
-     *
-     * @param classFile The Java source file to analyze
-     * @return An Observable that emits a ClassDepsReport
+     * Parse a Java file to extract class dependencies
+     * @param file the Java file to parse
+     * @return a ClassDependency object with the class name and its dependencies
      */
-    public Observable<ClassDepsReport> analyzeClass(File classFile) {
-        if (!classFile.exists() || !classFile.isFile() || !classFile.getName().endsWith(".java")) {
-            return Observable.error(new IllegalArgumentException("Invalid Java file: " + classFile.getPath()));
-        }
+    public ClassDependency parseClassDependencies(Path file) {
+        try {
+            JavaParser parser = new JavaParser();
+            CompilationUnit cu = parser.parse(file).getResult().orElseThrow();
 
-        return parserService.parseJavaFile(classFile)
-                .flatMap(cu -> extractClassInfo(cu, classFile))
-                .doOnSuccess(report -> {
-                    classCounter.incrementAndGet();
-                    dependencyCounter.addAndGet(report.getDependencyCount());
-                })
-                .toObservable()
-                .subscribeOn(Schedulers.io());
-    }
+            // Get the class name
+            String className = cu.getPrimaryType()
+                    .map(TypeDeclaration::getNameAsString)
+                    .orElse(file.getFileName().toString().replace(".java", ""));
 
-    /**
-     * Extracts class information from a parsed CompilationUnit.
-     *
-     * @param cu The parsed CompilationUnit
-     * @param classFile The source Java file
-     * @return A Single that emits a ClassDepsReport
-     */
-    private Single<ClassDepsReport> extractClassInfo(CompilationUnit cu, File classFile) {
-        return Single.fromCallable(() -> {
+            // Get the package name if available
             String packageName = cu.getPackageDeclaration()
-                    .map(pd -> pd.getName().asString())
-                    .orElse("");
+                    .map(pkg -> pkg.getName().asString())
+                    .orElse("default");
 
-            Optional<ClassOrInterfaceDeclaration> mainClassOpt = cu.findFirst(ClassOrInterfaceDeclaration.class,
-                    c -> !c.isNestedType());
+            String fullClassName = packageName + "." + className;
 
-            if (mainClassOpt.isEmpty()) {
-                return new ClassDepsReport(packageName + ".UnknownClass");
-            }
+            // Find all class/interface type references
+            Set<String> dependencies = new HashSet<>();
+            cu.findAll(ClassOrInterfaceType.class).forEach(type -> {
+                String depName = type.getNameAsString();
+                if (!depName.equals(className) && !isJavaBuiltInType(depName)) {
+                    // Try to resolve the full name if possible
+                    String fullName = type.getScope()
+                            .map(scope -> scope.asString() + "." + depName)
+                            .orElse(depName);
+                    dependencies.add(fullName);
+                }
+            });
 
-            String className = packageName.isEmpty() ?
-                    mainClassOpt.get().getNameAsString() :
-                    packageName + "." + mainClassOpt.get().getNameAsString();
-
-            ClassDepsReport report = new ClassDepsReport(className);
-
-            // Apply visitor pattern to extract dependencies
-            cu.accept(new DependencyVisitor(report, className), null);
-
-            return report;
-        });
-    }
-
-    /**
-     * Finds all Java files in a directory (non-recursively).
-     *
-     * @param directory The directory to search in
-     * @return An Observable that emits Java files
-     */
-    private Observable<File> findJavaFiles(File directory) {
-        File[] files = directory.listFiles((dir, name) -> name.endsWith(".java"));
-        return files == null ? Observable.empty() : Observable.fromArray(files);
-    }
-
-    /**
-     * Analyzes all Java classes in a package directory.
-     *
-     * @param packageFolder The package directory to analyze
-     * @return An Observable that emits a PackageDepsReport
-     */
-    public Observable<PackageDepsReport> analyzePackage(File packageFolder) {
-        if (!packageFolder.exists() || !packageFolder.isDirectory()) {
-            return Observable.error(new IllegalArgumentException("Invalid package folder: " + packageFolder.getPath()));
-        }
-
-        return parserService.inferPackageNameFromDir(packageFolder)
-                .flatMapObservable(packageName -> {
-                    PackageDepsReport packageReport = new PackageDepsReport(packageName);
-
-                    return findJavaFiles(packageFolder)
-                            .flatMap(this::analyzeClass)
-                            .doOnNext(packageReport::addClassReport)
-                            .doOnComplete(() -> {
-                                // Handle empty packages
-                                if (packageReport.getClassCount() == 0) {
-                                    classCounter.incrementAndGet();
-                                }
-                            })
-                            .ignoreElements()
-                            .andThen(Observable.just(packageReport));
-                });
-    }
-
-    /**
-     * Finds all package directories in a project (recursively).
-     *
-     * @param projectDir The project root directory
-     * @return An Observable that emits package directories
-     */
-    private Observable<File> findPackageFolders(File projectDir) {
-        return Observable.create(emitter -> {
-            findPackageDirsRecursive(projectDir, emitter);
-            emitter.onComplete();
-        });
-    }
-
-    /**
-     * Helper method to recursively find package directories.
-     *
-     * @param dir The directory to search in
-     * @param emitter The emitter to emit found directories
-     */
-    private void findPackageDirsRecursive(File dir, ObservableEmitter<File> emitter) {
-        if (dir == null || !dir.exists() || !dir.isDirectory()) {
-            return;
-        }
-
-        // Check if directory contains Java files
-        File[] javaFiles = dir.listFiles((d, name) -> name.endsWith(".java"));
-        if (javaFiles != null && javaFiles.length > 0) {
-            emitter.onNext(dir);
-        }
-
-        // Recursively search subdirectories
-        File[] subDirs = dir.listFiles(File::isDirectory);
-        if (subDirs != null) {
-            for (File subDir : subDirs) {
-                findPackageDirsRecursive(subDir, emitter);
-            }
+            return new ClassDependency(fullClassName, dependencies);
+        } catch (IOException e) {
+            return new ClassDependency(file.getFileName().toString().replace(".java", ""), new HashSet<>());
         }
     }
 
     /**
-     * Analyzes all packages in a project to extract dependencies.
-     *
-     * @param projectFolder The project root directory
-     * @return An Observable that emits a ProjectDepsReport
+     * Check if a type is a Java built-in type
+     * @param typeName the type name to check
+     * @return true if it's a built-in type, false otherwise
      */
-    public Observable<ProjectDepsReport> analyzeProject(File projectFolder) {
-        if (!projectFolder.exists() || !projectFolder.isDirectory()) {
-            return Observable.error(new IllegalArgumentException("Invalid project folder: " + projectFolder.getPath()));
-        }
-
-        // Configure the parser with the project path
-        parserService.configureSourcePath(projectFolder);
-
-        // Reset counters
-        classCounter.set(0);
-        dependencyCounter.set(0);
-
-        String projectName = projectFolder.getName();
-        ProjectDepsReport projectReport = new ProjectDepsReport(projectName);
-
-        return findPackageFolders(projectFolder)
-                .flatMap(this::analyzePackage)
-                .doOnNext(projectReport::addPackageReport)
-                .ignoreElements()
-                .andThen(Observable.just(projectReport));
+    private boolean isJavaBuiltInType(String typeName) {
+        return typeName.equals("String") ||
+                typeName.equals("Object") ||
+                typeName.equals("Throwable") ||
+                typeName.equals("Exception") ||
+                typeName.equals("RuntimeException") ||
+                typeName.equals("Error");
     }
 }

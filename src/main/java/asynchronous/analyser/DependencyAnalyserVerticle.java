@@ -1,8 +1,8 @@
 package asynchronous.analyser;
 
-import common.report.ClassDepsReport;
-import common.report.PackageDepsReport;
-import common.report.ProjectDepsReport;
+import asynchronous.report.ClassDepsReport;
+import asynchronous.report.PackageDepsReport;
+import asynchronous.report.ProjectDepsReport;
 import io.vertx.core.*;
 
 import java.nio.file.Path;

@@ -1,4 +1,4 @@
-package common.util;
+package asynchronous.util;
 
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
@@ -6,11 +6,11 @@ import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.resolution.types.ResolvedType;
-import common.report.ClassDepsReport;
+import asynchronous.report.ClassDepsReport;
 
 import java.util.*;
 
-import static common.util.TypeDependency.DependencyType.*;
+import static asynchronous.util.TypeDependency.DependencyType.*;
 
 /**
  * Visitor for the analysis of dependencies in Java classes.

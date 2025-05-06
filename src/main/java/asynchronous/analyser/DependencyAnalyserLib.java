@@ -5,10 +5,10 @@ import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.*;
-import common.report.ClassDepsReport;
-import common.report.PackageDepsReport;
-import common.report.ProjectDepsReport;
-import common.util.DependencyVisitor;
+import asynchronous.report.ClassDepsReport;
+import asynchronous.report.PackageDepsReport;
+import asynchronous.report.ProjectDepsReport;
+import asynchronous.util.DependencyVisitor;
 import io.vertx.core.*;
 
 import java.io.*;
