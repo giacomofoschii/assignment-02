@@ -2,14 +2,11 @@ package reactive.model;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.core.*;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import reactive.model.parser.DependencyVisitor;
-import reactive.model.parser.JavaParserService;
-import common.report.ClassDepsReport;
-import common.report.PackageDepsReport;
-import common.report.ProjectDepsReport;
+import reactive.model.parser.*;
+import common.report.*;
+import common.util.DependencyVisitor;
 
 import java.io.File;
 import java.util.Optional;
@@ -152,7 +149,7 @@ public class ReactiveDependencyAnalyser {
      * @param dir The directory to search in
      * @param emitter The emitter to emit found directories
      */
-    private void findPackageDirsRecursive(File dir, io.reactivex.rxjava3.core.ObservableEmitter<File> emitter) {
+    private void findPackageDirsRecursive(File dir, ObservableEmitter<File> emitter) {
         if (dir == null || !dir.exists() || !dir.isDirectory()) {
             return;
         }

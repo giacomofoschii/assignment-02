@@ -84,8 +84,8 @@ public class AnalysisView {
         HBox bottomPanel = new HBox(20);
         bottomPanel.setPadding(new Insets(10));
 
-        this.classesCountLabel = new Label("Number of Classes/Interfaces: 0");
-        this.dependenciesCountLabel = new Label("Number of Dependencies: 0");
+        this.classesCountLabel = new Label("Start to count number of Classes/Interfaces");
+        this.dependenciesCountLabel = new Label("Start to count number of Dependencies");
 
         bottomPanel.getChildren().addAll(classesCountLabel, dependenciesCountLabel);
         this.root.setBottom(bottomPanel);

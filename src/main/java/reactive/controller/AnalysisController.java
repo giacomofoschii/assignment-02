@@ -25,7 +25,6 @@ import java.util.Set;
  * Controller class that handles the business logic for dependency analysis.
  */
 public class AnalysisController {
-
     private final AnalysisView view;
     private final Graph graph;
     private final ReactiveDependencyAnalyser analyser;
@@ -127,7 +126,6 @@ public class AnalysisController {
 
             // Add the graph view to the UI
             this.view.getGraphView().displayGraph(viewPanel);
-            this.view.appendLog("Graph viewer initialized successfully.\n");
 
             // Set of processed class names to avoid duplication in the graph
             Set<String> processedClasses = new HashSet<>();
@@ -137,14 +135,7 @@ public class AnalysisController {
             disposables.add(
                     analyser.analyzeProject(selectedFolder)
                             .subscribeOn(Schedulers.io())
-                            .doOnSubscribe(d -> this.view.appendLog("Starting dependency analysis...\n"))
                             .flatMap(projectReport -> {
-                                Platform.runLater(() -> {
-                                    this.view.appendLog("Analysis completed. Found " + projectReport.getClassCount() +
-                                            " classes in " + projectReport.getPackageCount() + " packages.\n");
-                                    this.view.appendLog("Total dependencies: " + projectReport.getTotalDependencyCount() + "\n");
-                                });
-
                                 // Process all packages and their classes
                                 return Observable.fromIterable(projectReport.getPackageReports().values())
                                         .flatMap(packageReport ->
@@ -161,7 +152,6 @@ public class AnalysisController {
                                         Platform.runLater(() -> {
                                             this.view.updateClassesCount(analyser.getClassCounter().get());
                                             this.view.updateDependenciesCount(analyser.getDependencyCounter().get());
-                                            this.view.appendLog("Processing class: " + className + "\n");
                                         });
 
                                         // Add source class node if not exists

@@ -8,6 +8,7 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.*;
 import common.report.ClassDepsReport;
 import common.report.PackageDepsReport;
 import common.report.ProjectDepsReport;
+import common.util.DependencyVisitor;
 import io.vertx.core.*;
 
 import java.io.*;

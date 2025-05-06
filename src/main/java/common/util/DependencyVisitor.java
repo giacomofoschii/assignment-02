@@ -1,21 +1,19 @@
-package reactive.model.parser;
+package common.util;
 
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import com.github.javaparser.resolution.types.*;
-import common.report.*;
-import common.util.TypeDependency;
+import com.github.javaparser.resolution.types.ResolvedReferenceType;
+import com.github.javaparser.resolution.types.ResolvedType;
+import common.report.ClassDepsReport;
 
 import java.util.*;
 
 import static common.util.TypeDependency.DependencyType.*;
 
-
 /**
- * Visitor for analyzing dependencies in Java files.
- * Visit the AST and collects dependencies between types.
+ * Visitor for the analysis of dependencies in Java classes.
  */
 public class DependencyVisitor extends VoidVisitorAdapter<Void> {
     private final ClassDepsReport report;
@@ -25,7 +23,6 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
     public DependencyVisitor(ClassDepsReport report, String sourceClassName) {
         this.report = report;
         this.sourceClassName = sourceClassName;
-        // Base Java packages to exclude
         this.excludedPackages = new HashSet<>(Arrays.asList(
                 "java.lang", "java.util", "java.io", "java.math",
                 "java.time", "java.text", "java.nio", "java.net"
@@ -34,11 +31,11 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
 
     @Override
     public void visit(ClassOrInterfaceDeclaration n, Void arg) {
-        //Check if the class is an interface
+        // Check for class or interface dependencies
         for (ClassOrInterfaceType extendedType : n.getExtendedTypes()) {
             try {
                 String typeName = resolveTypeName(extendedType);
-                if (shouldIncludeType(typeName)) {
+                if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, EXTENDS,
                             "extends " + extendedType,
@@ -46,15 +43,13 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                     ));
                 }
             } catch (Exception ignored) {
-                // Ignore type resolution errors
             }
         }
 
-        // Check if the class implements interfaces
         for (ClassOrInterfaceType implementedType : n.getImplementedTypes()) {
             try {
                 String typeName = resolveTypeName(implementedType);
-                if (shouldIncludeType(typeName)) {
+                if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, IMPLEMENTS,
                             "implements " + implementedType,
@@ -62,7 +57,6 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                     ));
                 }
             } catch (Exception ignored) {
-                // Ignore type resolution errors
             }
         }
 
@@ -71,13 +65,13 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
 
     @Override
     public void visit(FieldDeclaration n, Void arg) {
-        // Check the declared fields
+        // Check field declarations
         for (VariableDeclarator variable : n.getVariables()) {
             if (variable.getType().isClassOrInterfaceType()) {
                 ClassOrInterfaceType type = variable.getType().asClassOrInterfaceType();
                 try {
                     String typeName = resolveTypeName(type);
-                    if (shouldIncludeType(typeName)) {
+                    if (shouldExcludeType(typeName)) {
                         report.addDependency(new TypeDependency(
                                 sourceClassName, typeName, FIELD,
                                 variable.getType() + " " + variable.getName(),
@@ -85,7 +79,6 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                         ));
                     }
                 } catch (Exception ignored) {
-                    // Ignore type resolution errors
                 }
             }
         }
@@ -95,11 +88,11 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
 
     @Override
     public void visit(MethodDeclaration n, Void arg) {
-        // Check the return type
+        // Check return type
         Type returnType = n.getType();
         try {
             String typeName = resolveTypeName(returnType);
-            if (shouldIncludeType(typeName)) {
+            if (shouldExcludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, METHOD_RETURN,
                         returnType + " " + n.getName() + "()",
@@ -107,14 +100,13 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 ));
             }
         } catch (Exception ignored) {
-            // Ignore type resolution errors
         }
 
-        // Check the parameters
+        // Check parameters
         for (Parameter parameter : n.getParameters()) {
             try {
                 String typeName = resolveTypeName(parameter.getType());
-                if (shouldIncludeType(typeName)) {
+                if (shouldExcludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, METHOD_PARAMETER,
                             parameter.toString(),
@@ -122,7 +114,6 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                     ));
                 }
             } catch (Exception ignored) {
-                // Ignore type resolution errors
             }
         }
 
@@ -134,7 +125,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         // Analyze object creation expressions
         try {
             String typeName = resolveTypeName(n.getType());
-            if (shouldIncludeType(typeName)) {
+            if (shouldExcludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, INSTANTIATION,
                         "new " + n.getType() + "()",
@@ -142,18 +133,11 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 ));
             }
         } catch (Exception ignored) {
-            // Ignore type resolution errors
         }
 
         super.visit(n, arg);
     }
 
-    /**
-     * Resolves the name of a type to its fully qualified name.
-     *
-     * @param type the type to resolve
-     * @return the fully qualified name of the type
-     */
     private String resolveTypeName(Type type) {
         try {
             if (type.isClassOrInterfaceType()) {
@@ -164,19 +148,13 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 }
             }
         } catch (Exception ignored) {
-            // Ignore type resolution errors
         }
 
         return type.asString();
     }
 
-    /**
-     * Determine if a type should be included in the dependency analysis
-     *
-     * @param typeName the name of the type to check
-     * @return true if the type should be included, false otherwise
-     */
-    private boolean shouldIncludeType(String typeName) {
+    // Exclude void and primitive types
+    private boolean shouldExcludeType(String typeName) {
         if (typeName == null
                 || typeName.isEmpty()
                 || typeName.equals("void")
@@ -184,17 +162,14 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 || isArrayType(typeName)) {
             return false;
         }
-
-        // Exclude base packages
+        // Exclude base package types (java.lang, etc.)
         for (String excludedPackage : this.excludedPackages) {
             if (typeName.startsWith(excludedPackage)) {
                 return false;
             }
         }
-
         // Exclude types from the same class
-        return !typeName.equals(sourceClassName);
-    }
+        return !typeName.equals(sourceClassName);}
 
     private boolean isPrimitiveType(String typeName) {
         return Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName);
