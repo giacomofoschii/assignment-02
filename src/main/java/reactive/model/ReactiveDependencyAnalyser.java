@@ -20,6 +20,10 @@ import java.util.stream.Stream;
  * Model class for dependency analysis using reactive streams
  */
 public class ReactiveDependencyAnalyser {
+    private static final Set<String> EXCLUDED_PACKAGES = Set.of(
+            "java.lang", "java.util", "java.io", "java.math",
+            "java.time", "java.text", "java.nio", "java.net"
+    );
 
     /**
      * Get all Java files from the given directory recursively
@@ -71,7 +75,9 @@ public class ReactiveDependencyAnalyser {
                     String fullName = type.getScope()
                             .map(scope -> scope.asString() + "." + depName)
                             .orElse(depName);
-                    dependencies.add(fullName);
+                    if (EXCLUDED_PACKAGES.stream().noneMatch(fullName::startsWith)) {
+                        dependencies.add(fullName);
+                    }
                 }
             });
 
