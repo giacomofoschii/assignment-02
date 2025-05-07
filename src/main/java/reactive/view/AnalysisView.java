@@ -78,13 +78,37 @@ public class AnalysisView {
         Label graphLabel = new Label("Dependency Graph:");
         Pane graphPane = this.graphView.getGraphPane();
 
+        addGraphZoomAndPan(graphPane);
+
         rightPanel.getChildren().addAll(graphLabel, graphPane);
         VBox.setVgrow(graphPane, Priority.ALWAYS);
 
         // Add both panels to the split pane
         splitPane.getItems().addAll(leftPanel, rightPanel);
-        splitPane.setDividerPositions(0.5);
+        splitPane.setDividerPositions(0.3);
         this.root.setCenter(splitPane);
+    }
+
+    private void addGraphZoomAndPan(Pane graphPane) {
+        graphPane.setOnScroll(event -> {
+            double zoomFactor = event.getDeltaY() > 0 ? 1.1 : 0.9;
+            graphPane.setScaleX(graphPane.getScaleX() * zoomFactor);
+            graphPane.setScaleY(graphPane.getScaleY() * zoomFactor);
+            event.consume();
+        });
+
+        graphPane.setOnMousePressed(event -> {
+            graphPane.setUserData(new double[]{event.getSceneX(), event.getSceneY()});
+        });
+
+        graphPane.setOnMouseDragged(event -> {
+            double[] lastPosition = (double[]) graphPane.getUserData();
+            double deltaX = event.getSceneX() - lastPosition[0];
+            double deltaY = event.getSceneY() - lastPosition[1];
+            graphPane.setTranslateX(graphPane.getTranslateX() + deltaX);
+            graphPane.setTranslateY(graphPane.getTranslateY() + deltaY);
+            graphPane.setUserData(new double[]{event.getSceneX(), event.getSceneY()});
+        });
     }
 
     private void setupBottomPanel() {
