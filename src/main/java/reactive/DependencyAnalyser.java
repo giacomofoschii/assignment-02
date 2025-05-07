@@ -6,8 +6,10 @@ import reactive.controller.AnalysisController;
 import reactive.model.ReactiveDependencyAnalyser;
 import reactive.view.AnalysisView;
 
-import java.io.File;
-
+/**
+ * Main application class that follows the MVC pattern
+ * Responsible only for bootstrapping the application
+ */
 public class DependencyAnalyser extends Application {
 
     private AnalysisController controller;
@@ -21,35 +23,14 @@ public class DependencyAnalyser extends Application {
         // Set up MVC components
         AnalysisView view = new AnalysisView();
         ReactiveDependencyAnalyser model = new ReactiveDependencyAnalyser();
-        this.controller = new AnalysisController(view, model);
+        this.controller = new AnalysisController(view, model, primaryStage);
 
-        // Configure stage
-        primaryStage.setTitle("Java Dependency Analyzer");
-        primaryStage.setScene(view.createScene());
+        view.setupStage(primaryStage);
 
-        // Set up folder selection dialog
-        DirectoryChooser directoryChooser = new DirectoryChooser();
-        directoryChooser.setTitle("Select Project Folder");
-
-        // Wire up the folder selection button
-        view.getFolderButton().setOnAction(e -> {
-            File selectedDirectory = directoryChooser.showDialog(primaryStage);
-            if (selectedDirectory != null) {
-                view.getStartButton().setDisable(false);
-                this.controller.setProjectFolder(selectedDirectory.getPath());
-                view.appendLog("Selected folder: " + selectedDirectory.getPath() + "\n");
-            }
-        });
-
-        // Wire up the start button
-        view.getStartButton().setOnAction(e -> this.controller.startAnalysis());
-
-        // Handle window close
+        // Handle window close - delegate to controller
         primaryStage.setOnCloseRequest(e -> {
-            if (!view.showExitConfirmation()) {
+            if (!controller.handleCloseRequest()) {
                 e.consume();
-            } else {
-                this.controller.shutdown();
             }
         });
 
@@ -62,5 +43,4 @@ public class DependencyAnalyser extends Application {
             this.controller.shutdown();
         }
     }
-
 }

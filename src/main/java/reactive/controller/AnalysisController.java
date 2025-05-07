@@ -5,6 +5,8 @@ import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.exceptions.MissingBackpressureException;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import javafx.application.Platform;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
 import org.graphstream.graph.*;
 import org.graphstream.graph.implementations.SingleGraph;
 import org.graphstream.ui.fx_viewer.*;
@@ -12,139 +14,151 @@ import org.graphstream.ui.view.Viewer;
 import reactive.model.*;
 import reactive.view.AnalysisView;
 
+import java.io.File;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Controller class for the dependency analysis application
+ * Controller class that handles the business logic for dependency analysis
  */
 public class AnalysisController {
     private static final int BUFFER_SIZE = 1000;
     private final AnalysisView view;
-    private final ReactiveDependencyAnalyser model;
-    private final CompositeDisposable disposables;
-    private String projectFolder;
-    private final AtomicInteger classCount = new AtomicInteger(0);
-    private final AtomicInteger dependencyCount = new AtomicInteger(0);
+    private final ReactiveDependencyAnalyser analyser;
+    private final Stage primaryStage;
     private final Graph graph;
-    private final Map<String, String> nodeIdMap = new HashMap<>();
+    private final CompositeDisposable disposables;
+    private final AtomicInteger classCount;
+    private final AtomicInteger dependencyCount;
+    private final Map<String, String> nodeIdMap;
+    private String projectFolder;
 
-    public AnalysisController(AnalysisView view, ReactiveDependencyAnalyser model) {
+    public AnalysisController(AnalysisView view, ReactiveDependencyAnalyser analyser, Stage primaryStage) {
         this.view = view;
-        this.model = model;
+        this.analyser = analyser;
+        this.primaryStage = primaryStage;
+        this.graph = this.initializeGraph();
         this.disposables = new CompositeDisposable();
+        this.classCount = new AtomicInteger(0);
+        this.dependencyCount = new AtomicInteger(0);
+        this.nodeIdMap = new HashMap<>();
 
-        // Initialize the graph
-        System.setProperty("org.graphstream.ui", "javafx");
-        this.graph = new SingleGraph("dependencies");
-
-        // Set up the graph styling
-        graph.setAttribute("ui.stylesheet",
-                "node { size: 10px; fill-color: #66B2FF; text-size: 12; } " +
-                        "edge { arrow-size: 5px, 3px; }");
+        this.initializeEventHandlers();
     }
 
-    /**
-     * Set the project folder to analyze
-     * @param path the path to the project folder
-     */
+    private Graph initializeGraph() {
+        Graph graph = new SingleGraph("Dependencies");
+        graph.setAttribute("ui.stylesheet",
+                "node { size: 30px; text-size: 12px; text-color: #000; fill-color: #B3E5FC; stroke-mode: plain; stroke-color: #0288D1; } " +
+                        "edge { arrow-shape: arrow; arrow-size: 12px, 6px; fill-color: #757575; }");
+        return graph;
+    }
+
+    private void initializeEventHandlers() {
+        DirectoryChooser directoryChooser = new DirectoryChooser();
+        directoryChooser.setTitle("Select Project Folder");
+
+        // Wire up the folder selection button
+        view.getFolderButton().setOnAction(e -> {
+            File selectedDirectory = directoryChooser.showDialog(primaryStage);
+            if (selectedDirectory != null) {
+                this.view.getStartButton().setDisable(false);
+                this.setProjectFolder(selectedDirectory.getPath());
+                this.view.appendLog("Selected folder: " + selectedDirectory.getPath() + "\n");
+            }
+        });
+
+        // Wire up the start button
+        this.view.getStartButton().setOnAction(e -> this.startAnalysis());
+    }
+
+    // Set the project folder to analyze
     public void setProjectFolder(String path) {
         this.projectFolder = path;
     }
 
-    /**
-     * Start the dependency analysis process
-     */
+    // Start the dependency analysis process
     public void startAnalysis() {
-        if (projectFolder == null || projectFolder.isEmpty()) {
-            view.appendLog("Error: No project folder selected\n");
+        if (this.projectFolder == null || this.projectFolder.isEmpty()) {
+            this.view.appendLog("Error: No project folder selected\n");
             return;
         }
 
         // Reset state
-        resetAnalysis();
+        this.resetAnalysis();
 
-        view.appendLog("Starting analysis of: " + projectFolder + "\n");
-        view.getStartButton().setDisable(true);
-        view.getFolderButton().setDisable(true);
+        this.view.appendLog("Starting analysis of: " + this.projectFolder + "\n");
+        this.view.getStartButton().setDisable(true);
+        this.view.getFolderButton().setDisable(true);
 
         // Process the Java files reactively
-        disposables.add(
-                model.getJavaFiles(projectFolder)
+        this.disposables.add(
+                this.analyser.getJavaFiles(this.projectFolder)
                         .onBackpressureBuffer(BUFFER_SIZE, () -> {}, BackpressureOverflowStrategy.ERROR)
-                        .map(model::parseClassDependencies)
+                        .map(analyser::parseClassDependencies)
                         .observeOn(Schedulers.single())
                         .subscribe(
                                 classDep -> {
                                     // Update counters
-                                    classCount.incrementAndGet();
-                                    dependencyCount.addAndGet(classDep.getDependencyCount());
+                                    this.classCount.incrementAndGet();
+                                    this.dependencyCount.addAndGet(classDep.getDependencyCount());
 
                                     // Update UI
                                     Platform.runLater(() -> {
-                                        view.updateClassesCount(classCount.get());
-                                        view.updateDependenciesCount(dependencyCount.get());
-                                        view.appendLog("Analyzed class: " + classDep.getClassName() +
+                                        this.view.updateClassesCount(this.classCount.get());
+                                        this.view.updateDependenciesCount(this.dependencyCount.get());
+                                        this.view.appendLog("Analyzed class: " + classDep.getClassName() +
                                                 " - Dependencies: " + classDep.getDependencyCount() + "\n");
 
                                         // Update graph
                                         updateGraph(classDep);
                                     });
                                 },
-                                error -> {
-                                    Platform.runLater(() -> {
-                                        if (error instanceof MissingBackpressureException) {
-                                            view.appendLog("Error: Too many classes, buffer full\n");
-                                        } else {
-                                            view.appendLog("Error: " + error.getMessage() + "\n");
-                                        }
-                                        view.getStartButton().setDisable(false);
-                                        view.getFolderButton().setDisable(false);
-                                    });
-                                },
-                                () -> {
-                                    Platform.runLater(() -> {
-                                        view.appendLog("Analysis completed!\n");
-                                        view.appendLog("Total classes: " + classCount.get() + "\n");
-                                        view.appendLog("Total dependencies: " + dependencyCount.get() + "\n");
-                                        view.getStartButton().setDisable(false);
-                                        view.getFolderButton().setDisable(false);
-                                    });
-                                }
+                                error -> Platform.runLater(() -> {
+                                    if (error instanceof MissingBackpressureException) {
+                                        this.view.appendLog("Error: Too many classes, buffer full\n");
+                                    } else {
+                                        this.view.appendLog("Error: " + error.getMessage() + "\n");
+                                    }
+                                    this.view.getStartButton().setDisable(false);
+                                    this.view.getFolderButton().setDisable(false);
+                                }),
+                                () -> Platform.runLater(() -> {
+                                    this.view.appendLog("Analysis completed!\n");
+                                    this.view.appendLog("Total classes: " + this.classCount.get() + "\n");
+                                    this.view.appendLog("Total dependencies: " + this.dependencyCount.get() + "\n");
+                                    this.view.getStartButton().setDisable(false);
+                                    this.view.getFolderButton().setDisable(false);
+                                })
                         )
         );
     }
 
-    /**
-     * Reset the analysis state
-     */
+    // Reset the analysis state
     private void resetAnalysis() {
         // Clear counters
-        classCount.set(0);
-        dependencyCount.set(0);
+        this.classCount.set(0);
+        this.dependencyCount.set(0);
 
         // Update UI
-        view.clearLog();
-        view.updateClassesCount(0);
-        view.updateDependenciesCount(0);
+        this.view.clearLog();
+        this.view.updateClassesCount(0);
+        this.view.updateDependenciesCount(0);
 
         // Clear graph
-        graph.clear();
-        nodeIdMap.clear();
+        this.graph.clear();
+        this.nodeIdMap.clear();
 
         // Create a new viewer for the graph
-        FxViewer viewer = new FxViewer(graph, Viewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
+        FxViewer viewer = new FxViewer(this.graph, Viewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
         viewer.enableAutoLayout();
         FxViewPanel viewPanel = (FxViewPanel) viewer.addDefaultView(false);
 
         // Display the graph
-        Platform.runLater(() -> view.getGraphView().displayGraph(viewPanel));
+        Platform.runLater(() -> this.view.getGraphView().displayGraph(viewPanel));
     }
 
-    /**
-     * Update the graph with a new class dependency
-     * @param classDep the class dependency to add to the graph
-     */
+    // Update the graph with a new class dependency
     private void updateGraph(ClassDependency classDep) {
         // Simplify class names for display
         String className = simplifyClassName(classDep.getClassName());
@@ -175,30 +189,29 @@ public class AnalysisController {
         }
     }
 
-    /**
-     * Simplify a fully qualified class name for display
-     * @param fullName the fully qualified class name
-     * @return the simplified class name
-     */
+    //Simplify a fully qualified class name for display
     private String simplifyClassName(String fullName) {
         // Get the simple class name (without package)
         int lastDot = fullName.lastIndexOf('.');
         return lastDot > 0 ? fullName.substring(lastDot + 1) : fullName;
     }
 
-    /**
-     * Get or create a node ID for a class name
-     * @param className the class name
-     * @return the node ID
-     */
+    //Get or create a node ID for a class name
     private String getOrCreateNodeId(String className) {
         return nodeIdMap.computeIfAbsent(className, k -> "n" + nodeIdMap.size());
     }
 
-    /**
-     * Shutdown the controller and dispose resources
-     */
+    // Handles window close request
+    public boolean handleCloseRequest() {
+        boolean shouldClose = this.view.showExitConfirmation();
+        if (shouldClose) {
+            this.shutdown();
+        }
+        return shouldClose;
+    }
+
+    // Shutdown the controller and dispose resources
     public void shutdown() {
-        disposables.dispose();
+        this.disposables.dispose();
     }
 }

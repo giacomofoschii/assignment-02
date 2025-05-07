@@ -32,7 +32,14 @@ public class AnalysisView {
         setupBottomPanel();
     }
 
-    public Scene createScene() {
+    public void setupStage(Stage primaryStage) {
+        primaryStage.setTitle("Java Dependency Analyzer");
+        primaryStage.setScene(this.createScene());
+        primaryStage.getIcons()
+                .add(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/icon.png"))));
+    }
+
+    private Scene createScene() {
         return new Scene(this.root, 1000, 700);
     }
 
@@ -107,10 +114,6 @@ public class AnalysisView {
         alert.getDialogPane().lookupButton(noBtn).setStyle("-fx-background-color: red; -fx-text-fill: white;");
 
         return alert.showAndWait().orElse(noBtn) == yesBtn;
-    }
-
-    public BorderPane getRoot() {
-        return this.root;
     }
 
     public Button getStartButton() {
