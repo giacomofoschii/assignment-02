@@ -108,7 +108,7 @@ public class AnalysisController {
                                     Platform.runLater(() -> {
                                         this.view.updateClassesCount(this.classCount.get());
                                         this.view.updateDependenciesCount(this.dependencyCount.get());
-                                        this.view.appendLog("Analyzed class: " + classDep.className() +
+                                        this.view.appendLog("Analyzed class: " + classDep.getClassName() +
                                                 " - Dependencies: " + classDep.getDependencyCount() + "\n");
 
                                         // Update graph
@@ -168,7 +168,7 @@ public class AnalysisController {
     // Update the graph with a new class dependency
     private void updateGraph(ClassDependency classDep) {
         // Simplify class names for display
-        String className = simplifyClassName(classDep.className());
+        String className = simplifyClassName(classDep.getClassName());
         String nodeId = getOrCreateNodeId(className);
 
         // Add the node if it doesn't exist
@@ -178,7 +178,7 @@ public class AnalysisController {
         }
 
         // Add dependencies as edges
-        for (String dependency : classDep.dependencies()) {
+        for (String dependency : classDep.getDependencies()) {
             String depName = simplifyClassName(dependency);
             String depNodeId = getOrCreateNodeId(depName);
 
