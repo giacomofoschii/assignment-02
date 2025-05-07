@@ -23,13 +23,14 @@ tasks.withType<JavaCompile> {
 
 javafx {
     version = "21"
-    modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics")
+    modules = listOf("javafx.controls", "javafx.fxml", "javafx.graphics", "javafx.swing")
 }
 
 application {
     mainClass.set("reactive.DependencyAnalyser")
     applicationDefaultJvmArgs = listOf(
         "--add-modules=javafx.controls,javafx.fxml,javafx.graphics",
+        "--add-modules=javafx.controls,javafx.fxml,javafx.graphics,javafx.swing",
         "--add-exports=javafx.graphics/com.sun.javafx.util=ALL-UNNAMED",
         "--add-exports=javafx.base/com.sun.javafx.event=ALL-UNNAMED",
         "--add-exports=javafx.graphics/com.sun.javafx.scene=ALL-UNNAMED"

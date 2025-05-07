@@ -32,6 +32,7 @@ public class AnalysisController {
     private final AtomicInteger dependencyCount;
     private final Map<String, String> nodeIdMap;
     private String projectFolder;
+    private FxViewer viewer;
 
     public AnalysisController(AnalysisView view, ReactiveDependencyAnalyser analyser, Stage primaryStage) {
         this.view = view;
@@ -136,6 +137,12 @@ public class AnalysisController {
 
     // Reset the analysis state
     private void resetAnalysis() {
+        // Close the viewer if it exists
+        if (this.viewer != null) {
+            this.viewer.close();
+            this.viewer = null;
+        }
+
         // Clear counters
         this.classCount.set(0);
         this.dependencyCount.set(0);
@@ -150,9 +157,9 @@ public class AnalysisController {
         this.nodeIdMap.clear();
 
         // Create a new viewer for the graph
-        FxViewer viewer = new FxViewer(this.graph, Viewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
-        viewer.enableAutoLayout();
-        FxViewPanel viewPanel = (FxViewPanel) viewer.addDefaultView(false);
+        this.viewer = new FxViewer(this.graph, Viewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
+        this.viewer.enableAutoLayout();
+        FxViewPanel viewPanel = (FxViewPanel) this.viewer.addDefaultView(false);
 
         // Display the graph
         Platform.runLater(() -> this.view.getGraphView().displayGraph(viewPanel));
@@ -165,8 +172,8 @@ public class AnalysisController {
         String nodeId = getOrCreateNodeId(className);
 
         // Add the node if it doesn't exist
-        if (graph.getNode(nodeId) == null) {
-            Node node = graph.addNode(nodeId);
+        if (this.graph.getNode(nodeId) == null) {
+            Node node = this.graph.addNode(nodeId);
             node.setAttribute("ui.label", className);
         }
 
@@ -176,15 +183,15 @@ public class AnalysisController {
             String depNodeId = getOrCreateNodeId(depName);
 
             // Add the dependency node if it doesn't exist
-            if (graph.getNode(depNodeId) == null) {
-                Node depNode = graph.addNode(depNodeId);
+            if (this.graph.getNode(depNodeId) == null) {
+                Node depNode = this.graph.addNode(depNodeId);
                 depNode.setAttribute("ui.label", depName);
             }
 
             // Add an edge if it doesn't exist
             String edgeId = nodeId + "-" + depNodeId;
-            if (graph.getEdge(edgeId) == null) {
-                graph.addEdge(edgeId, nodeId, depNodeId, true);
+            if (this.graph.getEdge(edgeId) == null) {
+                this.graph.addEdge(edgeId, nodeId, depNodeId, true);
             }
         }
     }
@@ -213,5 +220,29 @@ public class AnalysisController {
     // Shutdown the controller and dispose resources
     public void shutdown() {
         this.disposables.dispose();
+        this.closeViewer();
+
+        try {
+            Schedulers.shutdown();
+        } catch (Exception e) {
+            System.err.println("Error shutting down schedulers: " + e.getMessage());
+        }
+
+        Platform.runLater(() -> {
+            Platform.setImplicitExit(true);
+            Platform.exit();
+        });
+    }
+
+    private void closeViewer() {
+        if(this.viewer != null) {
+            try {
+                this.viewer.disableAutoLayout();
+                this.viewer.close();
+                this.viewer = null;
+            } catch (Exception e) {
+                System.err.println("Error closing viewer: " + e.getMessage());
+            }
+        }
     }
 }

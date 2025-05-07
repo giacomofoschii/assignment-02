@@ -15,6 +15,7 @@ public class DependencyAnalyser extends Application {
     private AnalysisController controller;
 
     public static void main(String[] args) {
+        System.setProperty("org.graphstream.ui", "javafx");
         launch(args);
     }
 
