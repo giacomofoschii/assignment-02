@@ -97,9 +97,7 @@ public class AnalysisView {
             event.consume();
         });
 
-        graphPane.setOnMousePressed(event -> {
-            graphPane.setUserData(new double[]{event.getSceneX(), event.getSceneY()});
-        });
+        graphPane.setOnMousePressed(event -> graphPane.setUserData(new double[]{event.getSceneX(), event.getSceneY()}));
 
         graphPane.setOnMouseDragged(event -> {
             double[] lastPosition = (double[]) graphPane.getUserData();

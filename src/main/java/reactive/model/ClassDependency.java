@@ -6,20 +6,10 @@ import java.util.Set;
 /**
  * Represents a class and its dependencies to other classes
  */
-public class ClassDependency {
-    private final String className;
-    private final Set<String> dependencies;
+public record ClassDependency(String className, Set<String> dependencies) {
 
-    public ClassDependency(String className, Set<String> dependencies) {
-        this.className = className;
-        this.dependencies = dependencies;
-    }
-
-    public String getClassName() {
-        return className;
-    }
-
-    public Set<String> getDependencies() {
+    @Override
+    public Set<String> dependencies() {
         return Collections.unmodifiableSet(dependencies);
     }
 
