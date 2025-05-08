@@ -9,6 +9,7 @@ import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import org.graphstream.graph.*;
 import org.graphstream.ui.fx_viewer.*;
+import org.graphstream.ui.layout.springbox.implementations.LinLog;
 import org.graphstream.ui.view.Viewer;
 import reactive.model.*;
 import reactive.view.AnalysisView;
@@ -127,7 +128,7 @@ public class AnalysisController {
     }
 
     // Reset the analysis state
-   private void resetAnalysis() {
+    private void resetAnalysis() {
         if (this.viewer != null) {
             this.viewer.close();
             this.viewer = null;
@@ -144,19 +145,23 @@ public class AnalysisController {
         this.nodeIdMap.clear();
 
         this.viewer = new FxViewer(this.graph, Viewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
-        this.viewer.enableAutoLayout();
+        LinLog layout = new LinLog(true);
+        layout.setQuality(2.0);
+        layout.setForce(10.0);
+        this.viewer.enableAutoLayout(layout);
+        this.viewer.enableAutoLayout(layout);
         FxViewPanel viewPanel = (FxViewPanel) this.viewer.addDefaultView(false);
         this.view.getZoomSlider().setValue(0.5);
         this.view.updateZoomLabel(0.5);
 
-       Platform.runLater(() -> {
-           if (viewPanel.getCamera() != null) {
-               viewPanel.getCamera().setViewPercent(2.0);
-           } else {
-               System.err.println("Camera not initialised. Cannot set zoom.");
-           }
-           this.view.getGraphView().displayGraph(viewPanel);
-       });
+        Platform.runLater(() -> {
+            if (viewPanel.getCamera() != null) {
+                viewPanel.getCamera().setViewPercent(2.0);
+            } else {
+                System.err.println("Camera not initialized, impossible to set zoom");
+            }
+            this.view.getGraphView().displayGraph(viewPanel);
+        });
     }
 
     // Update the graph with a new class dependency
