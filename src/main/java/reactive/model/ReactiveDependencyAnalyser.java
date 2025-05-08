@@ -25,11 +25,7 @@ public class ReactiveDependencyAnalyser {
             "java.time", "java.text", "java.nio", "java.net"
     );
 
-    /**
-     * Get all Java files from the given directory recursively
-     * @param projectPath the project root path
-     * @return a Flowable stream of Path objects for Java files
-     */
+    // Get all Java files from the given directory recursively
     public Flowable<Path> getJavaFiles(String projectPath) {
         return Flowable.defer(() -> {
             try (Stream<Path> paths = Files.walk(Paths.get(projectPath))) {
@@ -44,26 +40,17 @@ public class ReactiveDependencyAnalyser {
         }).subscribeOn(Schedulers.io());
     }
 
-    /**
-     * Parse a Java file to extract class dependencies
-     * @param file the Java file to parse
-     * @return a ClassDependency object with the class name and its dependencies
-     */
+    // Parse a Java file to extract class dependencies
     public ClassDependency parseClassDependencies(Path file) {
         try {
             JavaParser parser = new JavaParser();
             CompilationUnit cu = parser.parse(file).getResult().orElseThrow();
-
-            // Get the class name
             String className = cu.getPrimaryType()
                     .map(TypeDeclaration::getNameAsString)
                     .orElse(file.getFileName().toString().replace(".java", ""));
-
-            // Get the package name if available
             String packageName = cu.getPackageDeclaration()
                     .map(pkg -> pkg.getName().asString())
                     .orElse("default");
-
             String fullClassName = packageName + "." + className;
 
             // Find all class/interface type references
@@ -87,11 +74,7 @@ public class ReactiveDependencyAnalyser {
         }
     }
 
-    /**
-     * Check if a type is a Java built-in type
-     * @param typeName the type name to check
-     * @return true if it's a built-in type, false otherwise
-     */
+    // Check if a type is a Java built-in type
     private boolean isJavaBuiltInType(String typeName) {
         return typeName.equals("String") ||
                 typeName.equals("Object") ||
