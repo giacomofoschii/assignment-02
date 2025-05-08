@@ -37,7 +37,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         for (ClassOrInterfaceType extendedType : n.getExtendedTypes()) {
             try {
                 String typeName = resolveTypeName(extendedType);
-                if (shouldExcludeType(typeName)) {
+                if (shouldIncludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, EXTENDS,
                             "extends " + extendedType,
@@ -51,7 +51,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         for (ClassOrInterfaceType implementedType : n.getImplementedTypes()) {
             try {
                 String typeName = resolveTypeName(implementedType);
-                if (shouldExcludeType(typeName)) {
+                if (shouldIncludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, IMPLEMENTS,
                             "implements " + implementedType,
@@ -73,7 +73,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 ClassOrInterfaceType type = variable.getType().asClassOrInterfaceType();
                 try {
                     String typeName = resolveTypeName(type);
-                    if (shouldExcludeType(typeName)) {
+                    if (shouldIncludeType(typeName)) {
                         report.addDependency(new TypeDependency(
                                 sourceClassName, typeName, FIELD,
                                 variable.getType() + " " + variable.getName(),
@@ -94,7 +94,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         Type returnType = n.getType();
         try {
             String typeName = resolveTypeName(returnType);
-            if (shouldExcludeType(typeName)) {
+            if (shouldIncludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, METHOD_RETURN,
                         returnType + " " + n.getName() + "()",
@@ -108,7 +108,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         for (Parameter parameter : n.getParameters()) {
             try {
                 String typeName = resolveTypeName(parameter.getType());
-                if (shouldExcludeType(typeName)) {
+                if (shouldIncludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, METHOD_PARAMETER,
                             parameter.toString(),
@@ -127,7 +127,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         // Analyze object creation expressions
         try {
             String typeName = resolveTypeName(n.getType());
-            if (shouldExcludeType(typeName)) {
+            if (shouldIncludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, INSTANTIATION,
                         "new " + n.getType() + "()",
@@ -156,7 +156,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
     }
 
     // Exclude void and primitive types
-    private boolean shouldExcludeType(String typeName) {
+    private boolean shouldIncludeType(String typeName) {
         if (typeName == null
                 || typeName.isEmpty()
                 || typeName.equals("void")
