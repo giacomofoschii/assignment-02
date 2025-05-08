@@ -132,8 +132,8 @@ public class AnalysisView {
 
     private HBox setupZoomControlPanel() {
         HBox zoomControlPanel = new HBox(10);
-        this.zoomLabel = new Label("Zoom: 50%");
-        this.zoomSlider = new Slider(0.1, 3.0, 0.5);
+        this.zoomLabel = new Label("Zoom: 100%");
+        this.zoomSlider = new Slider(0.1, 3.0, 1.0);
         this.zoomSlider.setShowTickLabels(true);
         this.zoomSlider.setShowTickMarks(true);
         this.zoomSlider.setMajorTickUnit(0.5);
