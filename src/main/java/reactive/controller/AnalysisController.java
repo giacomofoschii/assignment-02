@@ -127,7 +127,7 @@ public class AnalysisController {
     }
 
     // Reset the analysis state
-    private void resetAnalysis() {
+   private void resetAnalysis() {
         if (this.viewer != null) {
             this.viewer.close();
             this.viewer = null;
@@ -148,11 +148,15 @@ public class AnalysisController {
         FxViewPanel viewPanel = (FxViewPanel) this.viewer.addDefaultView(false);
         this.view.getZoomSlider().setValue(0.5);
         this.view.updateZoomLabel(0.5);
-        if (viewPanel.getCamera() != null) {
-            viewPanel.getCamera().setViewPercent(2.0);
-        }
 
-        Platform.runLater(() -> this.view.getGraphView().displayGraph(viewPanel));
+       Platform.runLater(() -> {
+           if (viewPanel.getCamera() != null) {
+               viewPanel.getCamera().setViewPercent(2.0);
+           } else {
+               System.err.println("Camera not initialised. Cannot set zoom.");
+           }
+           this.view.getGraphView().displayGraph(viewPanel);
+       });
     }
 
     // Update the graph with a new class dependency
