@@ -22,7 +22,8 @@ import java.util.stream.Stream;
 public class ReactiveDependencyAnalyser {
     private static final Set<String> EXCLUDED_PACKAGES = Set.of(
             "java.lang", "java.util", "java.io", "java.math",
-            "java.time", "java.text", "java.nio", "java.net"
+            "java.time", "java.text", "java.nio", "java.net",
+            "javafx", "org.graphstream"
     );
 
     // Get all Java files from the given directory recursively

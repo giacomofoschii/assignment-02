@@ -1,5 +1,6 @@
-package asynchronous.util;
+package asynchronous.analyser;
 
+import asynchronous.util.TypeDependency;
 import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.*;
@@ -25,7 +26,8 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         this.sourceClassName = sourceClassName;
         this.excludedPackages = new HashSet<>(Arrays.asList(
                 "java.lang", "java.util", "java.io", "java.math",
-                "java.time", "java.text", "java.nio", "java.net"
+                "java.time", "java.text", "java.nio", "java.net",
+                "javafx", "org.graphstream"
         ));
     }
 
