@@ -22,6 +22,8 @@ public class AnalysisView {
     private Label dependenciesCountLabel;
     private Button startButton;
     private Button folderButton;
+    private Slider zoomSlider;
+    private Label zoomLabel;
 
     public AnalysisView() {
         this.root = new BorderPane();
@@ -63,50 +65,25 @@ public class AnalysisView {
         // Left panel - Log area
         VBox leftPanel = new VBox(10);
         leftPanel.setPadding(new Insets(10));
-
         Label logLabel = new Label("Analysis Log:");
         this.logTextArea = new TextArea();
         this.logTextArea.setEditable(false);
-
         leftPanel.getChildren().addAll(logLabel, this.logTextArea);
         VBox.setVgrow(this.logTextArea, Priority.ALWAYS);
 
-        // Right panel - Graph area
+        // Right panel - Graph area with zoom control
         VBox rightPanel = new VBox(10);
         rightPanel.setPadding(new Insets(10));
-
         Label graphLabel = new Label("Dependency Graph:");
-        Pane graphPane = this.graphView.getGraphPane();
+        HBox zoomControlPanel = this.setupZoomControlPanel();
+        ScrollPane scrollPane = this.setupScrollPane();
 
-        addGraphZoomAndPan(graphPane);
-
-        rightPanel.getChildren().addAll(graphLabel, graphPane);
-        VBox.setVgrow(graphPane, Priority.ALWAYS);
-
-        // Add both panels to the split pane
+        // Add components to the panels
+        rightPanel.getChildren().addAll(graphLabel, zoomControlPanel, scrollPane);
+        VBox.setVgrow(scrollPane, Priority.ALWAYS);
         splitPane.getItems().addAll(leftPanel, rightPanel);
         splitPane.setDividerPositions(0.3);
         this.root.setCenter(splitPane);
-    }
-
-    private void addGraphZoomAndPan(Pane graphPane) {
-        graphPane.setOnScroll(event -> {
-            double zoomFactor = event.getDeltaY() > 0 ? 1.1 : 0.9;
-            graphPane.setScaleX(graphPane.getScaleX() * zoomFactor);
-            graphPane.setScaleY(graphPane.getScaleY() * zoomFactor);
-            event.consume();
-        });
-
-        graphPane.setOnMousePressed(event -> graphPane.setUserData(new double[]{event.getSceneX(), event.getSceneY()}));
-
-        graphPane.setOnMouseDragged(event -> {
-            double[] lastPosition = (double[]) graphPane.getUserData();
-            double deltaX = event.getSceneX() - lastPosition[0];
-            double deltaY = event.getSceneY() - lastPosition[1];
-            graphPane.setTranslateX(graphPane.getTranslateX() + deltaX);
-            graphPane.setTranslateY(graphPane.getTranslateY() + deltaY);
-            graphPane.setUserData(new double[]{event.getSceneX(), event.getSceneY()});
-        });
     }
 
     private void setupBottomPanel() {
@@ -138,6 +115,32 @@ public class AnalysisView {
         return alert.showAndWait().orElse(noBtn) == yesBtn;
     }
 
+    private ScrollPane setupScrollPane() {
+        ScrollPane scrollPane = new ScrollPane();
+        scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+        scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
+        scrollPane.setFitToWidth(false);
+        scrollPane.setFitToHeight(false);
+        scrollPane.setPannable(false);
+        Pane graphPane = this.graphView.getGraphPane();
+        graphPane.setPrefSize(1000, 1000);
+        scrollPane.setContent(graphPane);
+        scrollPane.setHvalue(0.5);
+        scrollPane.setVvalue(0.5);
+        return scrollPane;
+    }
+
+    private HBox setupZoomControlPanel() {
+        HBox zoomControlPanel = new HBox(10);
+        this.zoomLabel = new Label("Zoom: 50%");
+        this.zoomSlider = new Slider(0.1, 3.0, 0.5);
+        this.zoomSlider.setShowTickLabels(true);
+        this.zoomSlider.setShowTickMarks(true);
+        this.zoomSlider.setMajorTickUnit(0.5);
+        zoomControlPanel.getChildren().addAll(this.zoomLabel, this.zoomSlider);
+        return zoomControlPanel;
+    }
+
     public Button getStartButton() {
         return this.startButton;
     }
@@ -148,6 +151,10 @@ public class AnalysisView {
 
     public GraphView getGraphView() {
         return this.graphView;
+    }
+
+    public Slider getZoomSlider() {
+        return this.zoomSlider;
     }
 
     public void appendLog(String text) {
@@ -166,4 +173,8 @@ public class AnalysisView {
         this.dependenciesCountLabel.setText("Number of Dependencies: " + count);
     }
 
+    public void updateZoomLabel(double zoomFactor) {
+        int percentage = (int) (zoomFactor * 100);
+        this.zoomLabel.setText("Zoom: " + percentage + "%");
+    }
 }
