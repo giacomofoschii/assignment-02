@@ -5,11 +5,9 @@ import com.github.javaparser.ast.body.*;
 import com.github.javaparser.ast.expr.ObjectCreationExpr;
 import com.github.javaparser.ast.type.*;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import com.github.javaparser.resolution.types.ResolvedReferenceType;
-import com.github.javaparser.resolution.types.ResolvedType;
+import com.github.javaparser.resolution.types.*;
 import asynchronous.report.ClassDepsReport;
-
-import java.util.*;
+import common.ParserConfigurator;
 
 import static asynchronous.util.TypeDependency.DependencyType.*;
 
@@ -19,16 +17,12 @@ import static asynchronous.util.TypeDependency.DependencyType.*;
 public class DependencyVisitor extends VoidVisitorAdapter<Void> {
     private final ClassDepsReport report;
     private final String sourceClassName;
-    private final Set<String> excludedPackages;
+    private final ParserConfigurator parserConfigurator;
 
-    public DependencyVisitor(ClassDepsReport report, String sourceClassName) {
+    public DependencyVisitor(ClassDepsReport report, String sourceClassName, ParserConfigurator parserConfigurator) {
         this.report = report;
         this.sourceClassName = sourceClassName;
-        this.excludedPackages = new HashSet<>(Arrays.asList(
-                "java.lang", "java.util", "java.io", "java.math",
-                "java.time", "java.text", "java.nio", "java.net",
-                "javafx", "org.graphstream"
-        ));
+        this.parserConfigurator = parserConfigurator;
     }
 
     @Override
@@ -37,7 +31,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         for (ClassOrInterfaceType extendedType : n.getExtendedTypes()) {
             try {
                 String typeName = resolveTypeName(extendedType);
-                if (shouldIncludeType(typeName)) {
+                if (parserConfigurator.shouldIncludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, EXTENDS,
                             "extends " + extendedType,
@@ -51,7 +45,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         for (ClassOrInterfaceType implementedType : n.getImplementedTypes()) {
             try {
                 String typeName = resolveTypeName(implementedType);
-                if (shouldIncludeType(typeName)) {
+                if (parserConfigurator.shouldIncludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, IMPLEMENTS,
                             "implements " + implementedType,
@@ -73,7 +67,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
                 ClassOrInterfaceType type = variable.getType().asClassOrInterfaceType();
                 try {
                     String typeName = resolveTypeName(type);
-                    if (shouldIncludeType(typeName)) {
+                    if (parserConfigurator.shouldIncludeType(typeName)) {
                         report.addDependency(new TypeDependency(
                                 sourceClassName, typeName, FIELD,
                                 variable.getType() + " " + variable.getName(),
@@ -94,7 +88,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         Type returnType = n.getType();
         try {
             String typeName = resolveTypeName(returnType);
-            if (shouldIncludeType(typeName)) {
+            if (parserConfigurator.shouldIncludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, METHOD_RETURN,
                         returnType + " " + n.getName() + "()",
@@ -108,7 +102,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         for (Parameter parameter : n.getParameters()) {
             try {
                 String typeName = resolveTypeName(parameter.getType());
-                if (shouldIncludeType(typeName)) {
+                if (parserConfigurator.shouldIncludeType(typeName)) {
                     report.addDependency(new TypeDependency(
                             sourceClassName, typeName, METHOD_PARAMETER,
                             parameter.toString(),
@@ -127,7 +121,7 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         // Analyze object creation expressions
         try {
             String typeName = resolveTypeName(n.getType());
-            if (shouldIncludeType(typeName)) {
+            if (parserConfigurator.shouldIncludeType(typeName)) {
                 report.addDependency(new TypeDependency(
                         sourceClassName, typeName, INSTANTIATION,
                         "new " + n.getType() + "()",
@@ -153,31 +147,5 @@ public class DependencyVisitor extends VoidVisitorAdapter<Void> {
         }
 
         return type.asString();
-    }
-
-    // Exclude void and primitive types
-    private boolean shouldIncludeType(String typeName) {
-        if (typeName == null
-                || typeName.isEmpty()
-                || typeName.equals("void")
-                || isPrimitiveType(typeName)
-                || isArrayType(typeName)) {
-            return false;
-        }
-        // Exclude base package types (java.lang, etc.)
-        for (String excludedPackage : this.excludedPackages) {
-            if (typeName.startsWith(excludedPackage)) {
-                return false;
-            }
-        }
-        // Exclude types from the same class
-        return !typeName.equals(sourceClassName);}
-
-    private boolean isPrimitiveType(String typeName) {
-        return Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName);
-    }
-
-    private boolean isArrayType(String typeName) {
-        return typeName.endsWith("[]");
     }
 }

@@ -3,11 +3,8 @@ package asynchronous.analyser;
 import com.github.javaparser.*;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.symbolsolver.JavaSymbolSolver;
-import com.github.javaparser.symbolsolver.resolution.typesolvers.*;
-import asynchronous.report.ClassDepsReport;
-import asynchronous.report.PackageDepsReport;
-import asynchronous.report.ProjectDepsReport;
+import asynchronous.report.*;
+import common.ParserConfigurator;
 import io.vertx.core.*;
 
 import java.io.*;
@@ -21,11 +18,13 @@ import java.util.*;
  */
 public class DependencyAnalyserLib {
     private final Vertx vertx;
-    private final JavaParser parser;
+    private JavaParser parser;
+    private final ParserConfigurator parserConfigurator;
 
     public DependencyAnalyserLib(Vertx vertx) {
         this.vertx = vertx;
-        this.parser = createJavaParser(new CombinedTypeSolver(new ReflectionTypeSolver(false)));
+        this.parserConfigurator = new ParserConfigurator();
+        this.parser = parserConfigurator.getParser();
     }
 
     public Future<ClassDepsReport> getClassDependencies(Path classSrcFile) {
@@ -49,7 +48,7 @@ public class DependencyAnalyserLib {
                 ClassDepsReport classReport = new ClassDepsReport(className);
 
                 // Visit the AST to find dependencies
-                cu.accept(new DependencyVisitor(classReport, className), null);
+                cu.accept(new DependencyVisitor(classReport, className, parserConfigurator), null);
 
                 promise.complete(classReport);
             } else {
@@ -98,7 +97,7 @@ public class DependencyAnalyserLib {
             return Future.failedFuture(projectSrcFolder + " is not a directory");
         }
 
-        this.configureSourceRepositories(Collections.singletonList(projectSrcFolder.toFile()));
+        this.parser = parserConfigurator.createParserWithResolvers(List.of(projectSrcFolder.toFile()));
         List<Path> packageDirs = findPackageDirectories(projectSrcFolder);
 
         String projectName = projectSrcFolder.getFileName().toString();
@@ -142,27 +141,6 @@ public class DependencyAnalyserLib {
         }
 
         return packageDir.getName();
-    }
-
-    //Creates a JavaParser instance with a custom type solver.
-    //Needed for type dependency to define source and target.
-    private JavaParser createJavaParser(CombinedTypeSolver typeSolver) {
-        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
-        JavaParser parser = new JavaParser();
-        parser.getParserConfiguration().setSymbolResolver(symbolSolver);
-        return parser;
-    }
-
-    private void configureSourceRepositories(List<File> rootDirs) {
-        //Needed to import personal types, created by us in the project
-        //For correct tracking of these methods, we need a javaparserTypeSolver, with our directories
-        CombinedTypeSolver typeSolver = new CombinedTypeSolver();
-        typeSolver.add(new ReflectionTypeSolver(false));
-        for (File rootDir : rootDirs) {
-            if (rootDir.exists() && rootDir.isDirectory()) {
-                typeSolver.add(new JavaParserTypeSolver(rootDir));}}
-        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
-        this.parser.getParserConfiguration().setSymbolResolver(symbolSolver);
     }
 
     private List<Path> findPackageDirectories(Path projectDir) {

@@ -4,8 +4,7 @@ import com.github.javaparser.*;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.TypeDeclaration;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.symbolsolver.JavaSymbolSolver;
-import com.github.javaparser.symbolsolver.resolution.typesolvers.*;
+import common.ParserConfigurator;
 import io.reactivex.rxjava3.core.Flowable;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -19,25 +18,12 @@ import java.util.stream.*;
  */
 public class ReactiveDependencyAnalyser {
     private JavaParser parser;
-    private final Set<String> excludedPackages = Set.of(
-            "java.lang", "java.util", "java.io", "java.math",
-            "java.time", "java.text", "java.nio", "java.net",
-            "javafx", "org.graphstream"
-    );
+    private final ParserConfigurator parserConfigurator = new ParserConfigurator();
 
-    private void configureSymbolResolver(String projectPath) {
-        CombinedTypeSolver typeSolver = new CombinedTypeSolver();
-        typeSolver.add(new ReflectionTypeSolver());
-        typeSolver.add(new JavaParserTypeSolver(new File(projectPath)));
-        JavaSymbolSolver symbolSolver = new JavaSymbolSolver(typeSolver);
-        ParserConfiguration configuration = new ParserConfiguration();
-        configuration.setSymbolResolver(symbolSolver);
-        parser = new JavaParser(configuration);
-    }
 
     // Get all Java files from the given directory recursively
     public Flowable<Path> getJavaFiles(String projectPath) {
-        configureSymbolResolver(projectPath);
+        this.parser = parserConfigurator.createParserWithResolvers(List.of(new File(projectPath)));
 
         return Flowable.defer(() -> {
             try (Stream<Path> paths = Files.walk(Paths.get(projectPath))) {
@@ -70,7 +56,7 @@ public class ReactiveDependencyAnalyser {
                 String depName = type.getNameAsString();
                 if (!depName.equals(className)) {
                     String qualifiedName = resolveTypeName(type, depName);
-                    if (shouldIncludeType(qualifiedName)) {
+                    if (parserConfigurator.shouldIncludeType(qualifiedName)) {
                         dependencies.add(qualifiedName);
                     }
                 }
@@ -90,36 +76,5 @@ public class ReactiveDependencyAnalyser {
         return type.getScope()
                 .map(scope -> scope.asString() + "." + defaultName)
                 .orElse(defaultName);
-    }
-
-    private boolean isPrimitiveType(String typeName) {
-        return Set.of("byte", "short", "int", "long", "float", "double", "boolean", "char").contains(typeName);
-    }
-
-    private boolean isJavaBuiltInType(String typeName) {
-        return Set.of("List", "Vector", "Map", "Set", "Queue", "Deque", "Collections",
-                "Arrays", "Objects", "Optional", "Stream", "Collectors", "Function",
-                "Predicate", "Consumer", "Supplier", "Future", "Callable", "Runnable").contains(typeName);
-    }
-
-    private boolean isArrayType(String typeName) {
-        return typeName.endsWith("[]");
-    }
-
-    private boolean shouldIncludeType(String typeName) {
-        if (typeName == null
-                || typeName.isEmpty()
-                || typeName.equals("void")
-                || isPrimitiveType(typeName)
-                || isArrayType(typeName)
-                || isJavaBuiltInType(typeName)) {
-            return false;
-        }
-        for (String excludedPackage : this.excludedPackages) {
-            if (typeName.startsWith(excludedPackage)) {
-                return false;
-            }
-        }
-        return true;
     }
 }
