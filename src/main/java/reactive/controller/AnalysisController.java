@@ -149,7 +149,6 @@ public class AnalysisController {
         layout.setQuality(2.0);
         layout.setForce(10.0);
         this.viewer.enableAutoLayout(layout);
-        this.viewer.enableAutoLayout(layout);
         FxViewPanel viewPanel = (FxViewPanel) this.viewer.addDefaultView(false);
         this.view.getZoomSlider().setValue(0.5);
         this.view.updateZoomLabel(0.5);
