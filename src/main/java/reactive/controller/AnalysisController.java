@@ -145,17 +145,19 @@ public class AnalysisController {
         this.nodeIdMap.clear();
 
         this.viewer = new FxViewer(this.graph, Viewer.ThreadingModel.GRAPH_IN_GUI_THREAD);
-        LinLog layout = new LinLog(true);
-        layout.setQuality(2.0);
-        layout.setForce(10.0);
+        LinLog layout = new LinLog(false);
+        layout.setQuality(4.0);
+        layout.setForce(0.2);
+        layout.setGravityFactor(0.8);
+        layout.setStabilizationLimit(0.9);
         this.viewer.enableAutoLayout(layout);
         FxViewPanel viewPanel = (FxViewPanel) this.viewer.addDefaultView(false);
-        this.view.getZoomSlider().setValue(0.5);
-        this.view.updateZoomLabel(0.5);
+        this.view.getZoomSlider().setValue(0.20);
+        this.view.updateZoomLabel(0.20);
 
         Platform.runLater(() -> {
             if (viewPanel.getCamera() != null) {
-                viewPanel.getCamera().setViewPercent(2.0);
+                viewPanel.getCamera().setViewPercent(4.0);
             } else {
                 System.err.println("Camera not initialized, impossible to set zoom");
             }
@@ -171,6 +173,7 @@ public class AnalysisController {
         if (this.graph.getNode(nodeId) == null) {
             Node node = this.graph.addNode(nodeId);
             node.setAttribute("ui.label", className);
+            node.setAttribute("ui.size", 30 + classDep.getDependencyCount() * 2);
         }
 
         // Add dependencies as edges
@@ -181,12 +184,28 @@ public class AnalysisController {
             if (this.graph.getNode(depNodeId) == null) {
                 Node depNode = this.graph.addNode(depNodeId);
                 depNode.setAttribute("ui.label", depName);
+                depNode.setAttribute("ui.size", 25);
             }
 
             String edgeId = nodeId + "-" + depNodeId;
             if (this.graph.getEdge(edgeId) == null) {
-                this.graph.addEdge(edgeId, nodeId, depNodeId, true);
+                Edge edge = this.graph.addEdge(edgeId, nodeId, depNodeId, true);
+                edge.setAttribute("ui.style", "size: 2px;");
             }
+        }
+
+        if (this.graph.getNodeCount() > 0) {
+            Platform.runLater(this::updateNodeLabelPos);
+        }
+    }
+
+    private void updateNodeLabelPos() {
+        try {
+            for (Node node : this.graph) {
+                node.setAttribute("ui.style", "text-offset: 0px, -25px;");
+            }
+        } catch (Exception e) {
+            System.err.println("Error updating node label positions: " + e.getMessage());
         }
     }
 

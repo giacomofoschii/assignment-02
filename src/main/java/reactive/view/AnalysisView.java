@@ -121,9 +121,9 @@ public class AnalysisView {
         scrollPane.setVbarPolicy(ScrollPane.ScrollBarPolicy.ALWAYS);
         scrollPane.setFitToWidth(false);
         scrollPane.setFitToHeight(false);
-        scrollPane.setPannable(false);
+        scrollPane.setPannable(true);
         Pane graphPane = this.graphView.getGraphPane();
-        graphPane.setPrefSize(1000, 1000);
+        graphPane.setPrefSize(2000, 2000);
         scrollPane.setContent(graphPane);
         scrollPane.setHvalue(0.5);
         scrollPane.setVvalue(0.5);
