@@ -6,6 +6,23 @@ import reactive.controller.AnalysisController;
 import reactive.model.ReactiveDependencyAnalyser;
 import reactive.view.AnalysisView;
 
+/* Implemented by:
+    Giacomo Foschi
+    Matricola: 0001179137
+    Email: giacomo.foschi3@studio.unibo.it
+
+    Giovanni Pisoni
+    Matricola: 0001189814
+    Email: giovanni.pisoni@studio.unibo.it
+
+    Giovanni Rinchiuso
+    Matricola: 0001195145
+     Email: giovanni.rinchiuso@studio.unibo.it
+
+    Gioele Santi
+    Matricola: 0001189403
+    Email: gioele.santi2@studio.unibo.it
+*/
 /**
  * Main application class that follows the MVC pattern
  * Responsible only for bootstrapping the application
